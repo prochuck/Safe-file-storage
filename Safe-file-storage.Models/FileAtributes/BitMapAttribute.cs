@@ -13,8 +13,17 @@ namespace Safe_file_storage.Models.FileAtributes
 
         BitArray _bitMap;
 
+        public BitMapAttribute(int size)
+        {
+            Size = size;
+            SpaceLeft = size;
+            _bitMap = new BitArray(size);
+
+        }
+
         public int Size { get; }
         public int SpaceLeft { get; private set; }
+
 
 
 
@@ -39,12 +48,14 @@ namespace Safe_file_storage.Models.FileAtributes
             {
                 while (_bitMap[pointer] == true)
                 {
-                    pointer++;  
+                    pointer++;
                 }
                 int dataRunStart = pointer;
-                while (_bitMap[pointer] == false)
+                while (_bitMap[pointer] == false && sizeLeft != 0)
                 {
                     _bitMap[pointer] = true;
+                    SpaceLeft--;
+                    sizeLeft--;
                     pointer++;
                 }
 
@@ -61,25 +72,27 @@ namespace Safe_file_storage.Models.FileAtributes
         internal void FreeSpace(DataRun dataRun)
         {
             int pointer = dataRun.start;
-            while (dataRun.size!=0)
+            while (dataRun.size != 0)
             {
                 _bitMap[pointer] = false;
+                SpaceLeft++;
                 dataRun.size--;
                 pointer++;
             }
         }
-        internal void FreeSpace(DataRun dataRun,int size)
+        internal void FreeSpace(DataRun dataRun, int size)
         {
-            if (dataRun.size<=size)
+            if (dataRun.size <= size)
             {
                 FreeSpace(dataRun);
                 return;
             }
 
-            int pointer = dataRun.start+dataRun.size;
+            int pointer = dataRun.start + dataRun.size;
             while (size != 0)
             {
                 _bitMap[pointer] = false;
+                SpaceLeft++;
                 size--;
                 pointer--;
             }

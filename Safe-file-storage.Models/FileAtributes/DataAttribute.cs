@@ -14,6 +14,10 @@ namespace Safe_file_storage.Models.FileAtributes
 
         public  MemoryStream GetDataAsStream()
         {
+            if (_data is null)
+            {
+                return new MemoryStream();
+            }
             return new MemoryStream(_data);
         }
     }

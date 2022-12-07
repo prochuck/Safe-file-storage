@@ -46,7 +46,7 @@ namespace Safe_file_storage.Models.Services
                 throw new FileNotFoundException(null, _configuration.FilePath);
             }
 
-            _fileStream = File.Open(configuration.FilePath, FileMode.Open);
+            _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
 
             _mftBitMap = ReadFileAttribute<BitMapAttribute>(_mftRecordNo);
             _BitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
@@ -87,7 +87,17 @@ namespace Safe_file_storage.Models.Services
         {
             WriteFileHeader(file);
 
+            if (file.IsDirectory)
+            {
+                WriteAttribute(file.MFTRecordNo, 14, file.DirectoryAttribute);
+            }
+            else
+            {
+                WriteAttribute(file.MFTRecordNo, 14, file.DataAttribute);
+            }
 
+            //   WriteAttribute(file.MFTRecordNo, 1 * _configuration.AttributeHeaderSize + 14, file.FileNameAttribute);
+            WriteAttribute(file.MFTRecordNo, 2 * _configuration.AttributeHeaderSize + 14, file.HistoryAttribute);
         }
 
         void WriteFileHeader(FileModel file)
@@ -112,7 +122,7 @@ namespace Safe_file_storage.Models.Services
             {
                 throw new ArgumentOutOfRangeException("Попытка записи в соседнюю MFT запись");
             }
-            _fileStream.Position = mftNo * _configuration.MFTRecordSize + offset;
+
 
             MemoryStream attributeMemoryStream = attribute.GetDataAsStream();
 
@@ -137,15 +147,15 @@ namespace Safe_file_storage.Models.Services
 
                 while (allocatedSize > sizeInClusters)
                 {
-                    if (dataRuns[pointer].size< sizeToFree)
+                    if (dataRuns[pointer].size < sizeToFree)
                     {
-                        sizeToFree-=dataRuns[pointer].size;
+                        sizeToFree -= dataRuns[pointer].size;
                         _BitMapBitMap.FreeSpace(dataRuns[pointer]);
                         dataRuns.RemoveAt(pointer);
                     }
                     else
                     {
-                        _BitMapBitMap.FreeSpace(dataRuns[pointer],sizeToFree);
+                        _BitMapBitMap.FreeSpace(dataRuns[pointer], sizeToFree);
                         DataRun dataRun = dataRuns[pointer];
                         dataRun.size -= sizeToFree;
                         dataRuns[pointer] = dataRun;
@@ -154,14 +164,23 @@ namespace Safe_file_storage.Models.Services
                 }
             }
 
+            _fileStream.Position = mftNo * _configuration.MFTRecordSize + offset;
             using (BinaryWriter writer = new BinaryWriter(_fileStream, Encoding.Default, true))
             {
                 writer.Write(_fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key);
+                writer.Write(dataRuns.Count);
+                foreach (var item in dataRuns)
+                {
+                    writer.Write(item.start);
+                    writer.Write(item.size);
+                }
             }
+
+           
 
             foreach (var item in dataRuns)
             {
-                _fileStream.Position = item.start * _configuration.ClusterSize;
+                _fileStream.Position = _configuration.MFTZoneSize + item.start * _configuration.ClusterSize;
                 attributeMemoryStream.CopyTo(_fileStream, item.size);
             }
 
@@ -172,7 +191,7 @@ namespace Safe_file_storage.Models.Services
             _fileStream.Position = mftNo * _configuration.MFTRecordSize + offset + 4;
 
             List<DataRun> dataRuns = new List<DataRun>();
-            using (BinaryReader reader = new BinaryReader(_fileStream))
+            using (BinaryReader reader = new BinaryReader(_fileStream, Encoding.Default, true))
             {
                 int dataRunsCount = reader.ReadInt32();
                 for (int i = 0; i < dataRunsCount; i++)

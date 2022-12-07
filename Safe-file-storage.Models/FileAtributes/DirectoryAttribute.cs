@@ -26,7 +26,7 @@ namespace Safe_file_storage.Models.FileAtributes
 
             foreach (var item in Files)
             {
-                memoryStream.Write(BitConverter.GetBytes(item.MFTRecordId));
+                memoryStream.Write(BitConverter.GetBytes(item.MFTRecordNo));
             }
 
             memoryStream.Seek(0, SeekOrigin.Begin);

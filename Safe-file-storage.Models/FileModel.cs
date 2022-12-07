@@ -15,7 +15,7 @@ namespace Safe_file_storage.Models
         
         public FileModel(int MFTRecordId, FileModel parentDirectory, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
         {
-            this.MFTRecordId = MFTRecordId;
+            this.MFTRecordNo = MFTRecordId;
             this.ParentDirectory = parentDirectory;
             this.FileNameAttribute = fileNameAttribute;
             this.HistoryAttribute = historyAttribute;
@@ -24,7 +24,7 @@ namespace Safe_file_storage.Models
         }
         public FileModel(int MFTRecordId, FileModel parentDirectory, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
         {
-            this.MFTRecordId = MFTRecordId;
+            this.MFTRecordNo = MFTRecordId;
             this.ParentDirectory = parentDirectory;
             this.FileNameAttribute = fileNameAttribute;
             this.HistoryAttribute = historyAttribute;
@@ -33,13 +33,13 @@ namespace Safe_file_storage.Models
 
         public FileModel(int MFTRecordId)
         {
-            this.MFTRecordId = MFTRecordId;
+            this.MFTRecordNo = MFTRecordId;
         }
 
         /// <summary>
         /// Номер записи в MFT
         /// </summary>
-        public int MFTRecordId { get; }
+        public int MFTRecordNo { get; }
         public FileModel ParentDirectory { get; internal set; }
         public bool IsDirectory { get; }
         public FileNameAttribute FileNameAttribute { get; }

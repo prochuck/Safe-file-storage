@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Interfaces
 {
-    public class IFileAttribute
+    public interface IFileAttribute
     {
+        public MemoryStream GetDataAsStream();
     }
 }

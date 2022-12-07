@@ -22,10 +22,6 @@ namespace Safe_file_storage.Models.Interfaces
         /// <summary>
         /// Размер заголовка атрибута.
         /// </summary>
-        int AttributeHeaderSize { get; }
-        /// <summary>
-        /// Размер зоны mft.
-        /// </summary>
         int MFTZoneSize { get; }
     }
 }

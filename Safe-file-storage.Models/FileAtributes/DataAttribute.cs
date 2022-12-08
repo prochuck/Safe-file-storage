@@ -5,20 +5,36 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
-    public class DataAttribute : IFileAttribute
+    public class DataAttribute : FileAttribute
     {
         byte[] _data;
 
-        public  MemoryStream GetDataAsStream()
+
+        public DataAttribute(MemoryStream stream)
         {
+            stream.Position = 0;
+            _data =stream.ToArray();
+        }
+
+        public DataAttribute(byte[] data)
+        {
+            _data = data;
+        }
+
+        public override MemoryStream GetDataAsStream()
+        {
+            MemoryStream res = new MemoryStream();
             if (_data is null)
             {
-                return new MemoryStream();
+                return res;
             }
-            return new MemoryStream(_data);
+            res.Write(_data);
+
+            return res;
         }
     }
 }

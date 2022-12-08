@@ -21,6 +21,17 @@ namespace Safe_file_storage.Models.FileAtributes
 
         }
 
+        public BitMapAttribute(MemoryStream stream)
+        {
+            stream.Position = 0;
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
+                Size=reader.ReadInt32();
+                SpaceLeft=reader.ReadInt32();
+                _bitMap = new BitArray(reader.ReadBytes(Size));
+            }
+        }
+
         public int Size { get; }
         public int SpaceLeft { get; private set; }
 
@@ -100,10 +111,14 @@ namespace Safe_file_storage.Models.FileAtributes
 
         public MemoryStream GetDataAsStream()
         {
-            byte[] res = new byte[_bitMap.Length / 8 + (_bitMap.Length % 8 == 0 ? 0 : 1)];
-            _bitMap.CopyTo(res, 0);
+            MemoryStream res = new MemoryStream();
+            res.Write(BitConverter.GetBytes(Size));
+            res.Write(BitConverter.GetBytes(SpaceLeft));
+            byte[] buffer = new byte[_bitMap.Length / 8 + (_bitMap.Length % 8 == 0 ? 0 : 1)];
 
-            return new MemoryStream(res);
+            res.Write(buffer);
+
+            return res;
         }
     }
     internal struct DataRun

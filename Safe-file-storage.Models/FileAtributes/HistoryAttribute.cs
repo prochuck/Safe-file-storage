@@ -10,7 +10,7 @@ using System.Xml.Linq;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
-    public class HistoryAttribute : IFileAttribute
+    public class HistoryAttribute : FileAttribute
     {
         public HistoryAttribute()
         {
@@ -18,7 +18,22 @@ namespace Safe_file_storage.Models.FileAtributes
             _historyRecords.Add(new HistoryRecord(DateTime.Now, HistoryRecordAction.Created));
         }
 
+        public HistoryAttribute(MemoryStream stream)
+        {
+            stream.Position = 0;
 
+            _historyRecords = new List<HistoryRecord>();
+
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
+                while (stream.Position < reader.BaseStream.Length)
+                {
+                    long time = reader.ReadInt64();
+                    HistoryRecordAction action = (HistoryRecordAction)reader.ReadInt32();
+                    _historyRecords.Add(new HistoryRecord(DateTime.FromBinary(time), action));
+                }
+            }
+        }
 
         List<HistoryRecord> _historyRecords;
         public ReadOnlyCollection<HistoryRecord> HistoryRecords { get { return new ReadOnlyCollection<HistoryRecord>(_historyRecords); } }
@@ -28,7 +43,7 @@ namespace Safe_file_storage.Models.FileAtributes
             _historyRecords.Add(record);
         }
 
-        public MemoryStream GetDataAsStream()
+        public override MemoryStream GetDataAsStream()
         {
             MemoryStream memoryStream = new MemoryStream();
 

@@ -12,35 +12,40 @@ namespace Safe_file_storage.Models
     public class FileModel
     {
 
-        
-        public FileModel(int MFTRecordId, FileModel parentDirectory, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
+
+        public FileModel(int MFTRecordId, int ParentMFTRecordNo, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
         {
             this.MFTRecordNo = MFTRecordId;
-            this.ParentDirectory = parentDirectory;
             this.FileNameAttribute = fileNameAttribute;
             this.HistoryAttribute = historyAttribute;
             this.DirectoryAttribute = directoryAttribute;
+            ParentDirectoryRecordNo = ParentMFTRecordNo;
             IsDirectory = true;
         }
-        public FileModel(int MFTRecordId, FileModel parentDirectory, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
+        public FileModel(int MFTRecordId, int ParentMFTRecordNo, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
         {
             this.MFTRecordNo = MFTRecordId;
-            this.ParentDirectory = parentDirectory;
+            this.ParentDirectoryRecordNo = ParentMFTRecordNo;
             this.FileNameAttribute = fileNameAttribute;
             this.HistoryAttribute = historyAttribute;
             this.DataAttribute = dataAttribute;
+            IsDirectory = false;
         }
 
-        public FileModel(int MFTRecordId)
+        public FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isDirectory)
         {
             this.MFTRecordNo = MFTRecordId;
+            IsDirectory = isDirectory;
+            ParentDirectoryRecordNo = ParentMFTRecordNo;
         }
 
+
+        internal bool IsWritten { get; set; } = false;
         /// <summary>
         /// Номер записи в MFT
         /// </summary>
         public int MFTRecordNo { get; }
-        public FileModel ParentDirectory { get; internal set; }
+        public int ParentDirectoryRecordNo { get; }
         public bool IsDirectory { get; }
         public FileNameAttribute FileNameAttribute { get; }
         public HistoryAttribute HistoryAttribute { get; }

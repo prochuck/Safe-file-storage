@@ -12,7 +12,8 @@ namespace Safe_file_storage.Models.Interfaces
         public FileModel ReadFileHeaderAndAttributes(int fileMFTRecordId);
 
         public FileModel ReadFileHeader(int fileMFTRecordId);
-        public IFileAttribute ReadFileAttribute<IFileAttribute>(int fileMFTRecordId);
+        public T ReadFileAttribute<T>(int fileMFTRecordId)
+            where T : FileAttribute;
         /// <summary>
         /// Экспорт файла из программы.
         /// </summary>

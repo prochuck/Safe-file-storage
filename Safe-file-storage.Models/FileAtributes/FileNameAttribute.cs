@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Safe_file_storage.Interfaces;
+using Safe_file_storage.Models.Abstract;
 
 namespace Safe_file_storage.Models.FileAtributes
 {

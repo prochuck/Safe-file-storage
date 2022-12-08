@@ -1,6 +1,5 @@
-﻿using Safe_file_storage.Interfaces;
+﻿using Safe_file_storage.Models.Interfaces;
 using Safe_file_storage.Models.FileAtributes;
-using Safe_file_storage.Models.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;

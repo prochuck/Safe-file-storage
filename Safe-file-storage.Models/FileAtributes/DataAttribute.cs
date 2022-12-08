@@ -1,4 +1,4 @@
-﻿using Safe_file_storage.Interfaces;
+﻿using Safe_file_storage.Models.Abstract;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,4 +1,4 @@
-﻿using Safe_file_storage.Interfaces;
+﻿using Safe_file_storage.Models.Abstract;
 using Safe_file_storage.Models.FileAtributes;
 using Safe_file_storage.Models.Interfaces;
 using System;

@@ -39,7 +39,7 @@ namespace Safe_file_storage.Models
         }
 
 
-        internal bool IsWritten { get; set; } = false;
+        internal bool IsWritten { get; set; } = true;
         /// <summary>
         /// Номер записи в MFT
         /// </summary>

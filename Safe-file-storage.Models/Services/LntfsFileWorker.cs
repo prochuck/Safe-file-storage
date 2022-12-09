@@ -14,6 +14,7 @@ namespace Safe_file_storage.Models.Services
     public class LntfsFileWorker : IFileWorker, IDisposable
     {
         const int _mftRecordNo = 0;
+        const int _dotRecordNo = 1;
         const int _bitMapRecordNo = 2;
 
 
@@ -28,6 +29,11 @@ namespace Safe_file_storage.Models.Services
 
         };
 
+        FileModel _dot;
+        FileModel _mft;
+        FileModel _bitMap;
+
+        public FileModel RootDirectory { get { return _dot; } }
 
 
         FileStream _fileStream;
@@ -36,7 +42,7 @@ namespace Safe_file_storage.Models.Services
         /// <summary>
         /// Битмап файла $BITMAP. 
         /// </summary>
-        BitMapAttribute _BitMapBitMap;
+        BitMapAttribute _bitMapBitMap;
 
         ILntfsConfiguration _configuration;
         public LntfsFileWorker(ILntfsConfiguration configuration)
@@ -45,13 +51,48 @@ namespace Safe_file_storage.Models.Services
 
             if (!File.Exists(_configuration.FilePath))
             {
-                throw new FileNotFoundException(null, _configuration.FilePath);
+                File.WriteAllBytes(configuration.FilePath, new byte[configuration.FileSize]);
+                _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
+
+                _mftBitMap = new BitMapAttribute(configuration.MFTZoneSize / configuration.MFTRecordSize);
+                _bitMapBitMap = new BitMapAttribute((configuration.FileSize - configuration.MFTZoneSize) / configuration.ClusterSize);
+
+                _dot = new FileModel(_dotRecordNo, _dotRecordNo, new FileNameAttribute(".", 0, ""), new HistoryAttribute(), new DirectoryAttribute());
+                _mft = new FileModel(_mftRecordNo, _dotRecordNo, false);
+                _bitMap = new FileModel(_bitMapRecordNo, _dotRecordNo, false);
+
+                _dot.DirectoryAttribute.Files.Add(_mft);
+                _dot.DirectoryAttribute.Files.Add(_bitMap);
+                WriteFile(_dot);
+                WriteFileHeader(_mft);
+                WriteFileHeader(_bitMap);
+
+                _mftBitMap.GetSpace(3);
+
+                WriteAttribute(_mft, _mft.MFTRecordNo, 0, _mftBitMap);
+                WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
+
+                _fileStream.Flush();
+                //  _bitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
+            }
+            else
+            {
+                if ((new FileInfo(configuration.FilePath).Length != configuration.FileSize))
+                {
+                    throw new Exception("Файл повреждён");
+                }
+                _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
+
+                _bitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
+                _mftBitMap = ReadFileAttribute<BitMapAttribute>(_mftRecordNo);
+
+                _mft = ReadFileHeader(_mftRecordNo);
+                _bitMap = ReadFileHeader(_bitMapRecordNo);
+                _dot = ReadFileHeader(_dotRecordNo);
             }
 
-            _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
 
-            _mftBitMap = new BitMapAttribute(configuration.MFTZoneSize / configuration.MFTRecordSize);
-            _BitMapBitMap = new BitMapAttribute((configuration.FileSize - configuration.MFTZoneSize) / configuration.ClusterSize);
+
             //  _mftBitMap = ReadFileAttribute<BitMapAttribute>(_mftRecordNo);
             //  _BitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
 
@@ -64,9 +105,10 @@ namespace Safe_file_storage.Models.Services
 
         public void ExportFile(int fileMFTRecordId, string targetFilePath)
         {
-            
+
 
             FileModel file = ReadFileHeader(fileMFTRecordId);
+
             if (file.IsDirectory)
             {
                 if (Directory.Exists(targetFilePath))
@@ -75,9 +117,6 @@ namespace Safe_file_storage.Models.Services
                 }
                 DirectoryInfo createdDirectory = Directory.CreateDirectory(targetFilePath);
                 DirectoryAttribute directoryAttribute = ReadFileAttribute<DirectoryAttribute>(fileMFTRecordId);
-                
-
-             
 
                 foreach (var item in directoryAttribute.Files)
                 {
@@ -125,7 +164,7 @@ namespace Safe_file_storage.Models.Services
                 WriteFileHeader(file);
 
                 // Запись данных файла без занесения их в память целиком.
-                List<DataRun> dataRuns = _BitMapBitMap.GetSpace((int)(fileStream.Length / _configuration.ClusterSize) +
+                List<DataRun> dataRuns = _bitMapBitMap.GetSpace((int)(fileStream.Length / _configuration.ClusterSize) +
                     (fileStream.Length % _configuration.ClusterSize == 0 ? 0 : 1));
                 WriteAttributeFromStream(
                     file.MFTRecordNo,
@@ -136,12 +175,11 @@ namespace Safe_file_storage.Models.Services
 
                 WriteAttribute(file, file.MFTRecordNo, 1, file.FileNameAttribute);
                 WriteAttribute(file, file.MFTRecordNo, 2, file.HistoryAttribute);
-                file.IsWritten = true;
                 fileStream.Close();
             }
             else if (Directory.Exists(targetFilePath))
             {
-                DirectoryInfo directoryInfo=new DirectoryInfo(targetFilePath);
+                DirectoryInfo directoryInfo = new DirectoryInfo(targetFilePath);
 
                 file = new FileModel(
                         _mftBitMap.GetSpace(1).First().start,
@@ -160,12 +198,15 @@ namespace Safe_file_storage.Models.Services
                     file.DirectoryAttribute!.Files.Add(ImportFile(item, file.MFTRecordNo));
                 }
                 WriteFile(file);
-                file.IsWritten = true;
             }
             else
             {
                 throw new FileNotFoundException(null, targetFilePath);
             }
+
+            WriteAttribute(_mft, _mft.MFTRecordNo, 0, _mftBitMap);
+            WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
+
             return file;
         }
 
@@ -199,7 +240,7 @@ namespace Safe_file_storage.Models.Services
                 throw new Exception("Attribute not found");
             }
 
-            
+
             MemoryStream attributeMemoryStream = new MemoryStream();
 
             ReadAttributeToStream<T>(fileMFTRecordId, attributeNo, attributeMemoryStream);
@@ -259,7 +300,6 @@ namespace Safe_file_storage.Models.Services
                 bool isDirectory = reader.ReadBoolean();
                 res = new FileModel(mftRecordNo, parentDirectoryMftNo, isDirectory);
             }
-            res.IsWritten = true;
             return res;
 
         }
@@ -322,7 +362,7 @@ namespace Safe_file_storage.Models.Services
                 // Уравнение выделеного и реального размера в кластерах для нерезидентного атрибута.
                 if (allocatedSize < sizeInClusters)
                 {
-                    dataRuns.AddRange(_BitMapBitMap.GetSpace(sizeInClusters - allocatedSize));
+                    dataRuns.AddRange(_bitMapBitMap.GetSpace(sizeInClusters - allocatedSize));
                 }
                 else if (allocatedSize > sizeInClusters)
                 {
@@ -334,12 +374,12 @@ namespace Safe_file_storage.Models.Services
                         if (dataRuns[pointer].size < sizeToFree)
                         {
                             sizeToFree -= dataRuns[pointer].size;
-                            _BitMapBitMap.FreeSpace(dataRuns[pointer]);
+                            _bitMapBitMap.FreeSpace(dataRuns[pointer]);
                             dataRuns.RemoveAt(pointer);
                         }
                         else
                         {
-                            _BitMapBitMap.FreeSpace(dataRuns[pointer], sizeToFree);
+                            _bitMapBitMap.FreeSpace(dataRuns[pointer], sizeToFree);
                             DataRun dataRun = dataRuns[pointer];
                             dataRun.size -= sizeToFree;
                             dataRuns[pointer] = dataRun;
@@ -350,9 +390,12 @@ namespace Safe_file_storage.Models.Services
             }
             else
             {
-                dataRuns = _BitMapBitMap.GetSpace(sizeInClusters);
+                dataRuns = _bitMapBitMap.GetSpace(sizeInClusters);
             }
-
+            if (attribute == _bitMapBitMap)
+            {
+                attributeMemoryStream = attribute.GetDataAsStream();
+            }
             WriteAttributeFromStream(mftNo, attributeNo, _fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key, attributeMemoryStream, dataRuns);
 
         }
@@ -413,7 +456,7 @@ namespace Safe_file_storage.Models.Services
 
                 bytesToCopyLeft -= readed;
             }
-
+            target.Flush();
         }
 
         /// Структура файла

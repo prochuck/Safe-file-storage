@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Safe_file_storage.Models.Abstract;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
-    public class BitMapAttribute
+    public class BitMapAttribute : FileAttribute
     {
 
         BitArray _bitMap;
@@ -109,15 +110,17 @@ namespace Safe_file_storage.Models.FileAtributes
             }
         }
 
-        public MemoryStream GetDataAsStream()
+        public override MemoryStream GetDataAsStream()
         {
             MemoryStream res = new MemoryStream();
             res.Write(BitConverter.GetBytes(Size));
             res.Write(BitConverter.GetBytes(SpaceLeft));
             byte[] buffer = new byte[_bitMap.Length / 8 + (_bitMap.Length % 8 == 0 ? 0 : 1)];
-
+            _bitMap.CopyTo(buffer, 0);
             res.Write(buffer);
 
+
+            res.Seek(0, SeekOrigin.Begin);
             return res;
         }
     }

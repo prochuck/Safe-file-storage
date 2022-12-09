@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
@@ -34,7 +33,7 @@ namespace Safe_file_storage.Models.FileAtributes
                 return res;
             }
             res.Write(_data);
-
+            res.Seek(0, SeekOrigin.Begin);
             return res;
         }
     }

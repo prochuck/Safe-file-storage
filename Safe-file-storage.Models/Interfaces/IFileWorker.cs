@@ -25,5 +25,6 @@ namespace Safe_file_storage.Models.Interfaces
 
         public void WriteFile(FileModel file);
 
+        public FileModel RootDirectory { get; }
     }
 }

@@ -29,11 +29,19 @@ namespace Safe_file_storage.Models.Services
 
         };
 
-        FileModel _dot;
+
         FileModel _mft;
         FileModel _bitMap;
 
-        public FileModel RootDirectory { get { return _dot; } }
+        public FileModel RootDirectory
+        {
+            get
+            {
+                FileModel res = ReadFileHeader(_dotRecordNo);
+                res.DirectoryAttribute = ReadFileAttribute<DirectoryAttribute>(_dotRecordNo);
+                return res;
+            }
+        }
 
 
         FileStream _fileStream;
@@ -57,12 +65,10 @@ namespace Safe_file_storage.Models.Services
                 _mftBitMap = new BitMapAttribute(configuration.MFTZoneSize / configuration.MFTRecordSize);
                 _bitMapBitMap = new BitMapAttribute((configuration.FileSize - configuration.MFTZoneSize) / configuration.ClusterSize);
 
-                _dot = new FileModel(_dotRecordNo, _dotRecordNo, new FileNameAttribute(".", 0, ""), new HistoryAttribute(), new DirectoryAttribute());
+                FileModel _dot = new FileModel(_dotRecordNo, _dotRecordNo, new FileNameAttribute(".", 0, ""), new HistoryAttribute(), new DirectoryAttribute());
                 _mft = new FileModel(_mftRecordNo, _dotRecordNo, false);
                 _bitMap = new FileModel(_bitMapRecordNo, _dotRecordNo, false);
 
-                _dot.DirectoryAttribute.Files.Add(_mft);
-                _dot.DirectoryAttribute.Files.Add(_bitMap);
                 WriteFile(_dot);
                 WriteFileHeader(_mft);
                 WriteFileHeader(_bitMap);
@@ -88,7 +94,7 @@ namespace Safe_file_storage.Models.Services
 
                 _mft = ReadFileHeader(_mftRecordNo);
                 _bitMap = ReadFileHeader(_bitMapRecordNo);
-                _dot = ReadFileHeader(_dotRecordNo);
+               
             }
 
 

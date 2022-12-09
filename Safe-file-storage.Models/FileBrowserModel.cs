@@ -1,4 +1,5 @@
-﻿using Safe_file_storage.Models.Interfaces;
+﻿using Safe_file_storage.Models.FileAtributes;
+using Safe_file_storage.Models.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,35 +13,44 @@ namespace Safe_file_storage.Models
     {
 
 
-
+        IFileWorker _fileWorker;
         public FileModel CurrentDirectory { get; private set; }
         public ObservableCollection<FileModel> _files;
         public ReadOnlyObservableCollection<FileModel> FilesInDirectory { get; private set; }
 
         public FileBrowserModel(IFileWorker fileWorker)
         {
-            
-            CurrentDirectory = fileWorker.ReadFileHeaderAndAttributes(1);
-
+            _fileWorker = fileWorker;
+            CurrentDirectory = fileWorker.RootDirectory;
             _files = new ObservableCollection<FileModel>(CurrentDirectory.DirectoryAttribute.Files);
             FilesInDirectory = new ReadOnlyObservableCollection<FileModel>(_files);
-
         }
 
-
+        public void ExportCurrentDirectory(string targetPath)
+        {
+            _fileWorker.ExportFile(CurrentDirectory.MFTRecordNo,targetPath);
+        }
+        public void ImportToCurrentDirectory(string filePath)
+        {
+            _fileWorker.ImportFile(filePath, CurrentDirectory.MFTRecordNo);
+            UpdateFileList();
+        }
         public void MoveToDirectory(FileModel directory)
         {
             if (directory is not null && directory.IsDirectory)
             {
                 CurrentDirectory = directory;
+                UpdateFileList();
             }
         }
-
         private void UpdateFileList()
         {
             _files.Clear();
+            CurrentDirectory.DirectoryAttribute = _fileWorker.ReadFileAttribute<DirectoryAttribute>(CurrentDirectory.MFTRecordNo);
             foreach (var item in CurrentDirectory.DirectoryAttribute.Files)
             {
+                item.FileNameAttribute = _fileWorker.ReadFileAttribute<FileNameAttribute>(item.MFTRecordNo);
+                item.HistoryAttribute = _fileWorker.ReadFileAttribute<HistoryAttribute>(item.MFTRecordNo);
                 _files.Add(item);
             }
         }

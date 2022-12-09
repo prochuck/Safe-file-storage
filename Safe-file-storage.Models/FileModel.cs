@@ -38,7 +38,6 @@ namespace Safe_file_storage.Models
             ParentDirectoryRecordNo = ParentMFTRecordNo;
         }
 
-
         internal bool IsWritten { get; set; } = true;
         /// <summary>
         /// Номер записи в MFT
@@ -46,13 +45,13 @@ namespace Safe_file_storage.Models
         public int MFTRecordNo { get; }
         public int ParentDirectoryRecordNo { get; }
         public bool IsDirectory { get; }
-        public FileNameAttribute FileNameAttribute { get; }
-        public HistoryAttribute HistoryAttribute { get; }
+        public FileNameAttribute FileNameAttribute { get; internal set; }
+        public HistoryAttribute HistoryAttribute { get; internal set; }
 
         /// <summary>
         /// Атрибут директории. null если IsDirectory = false.
         /// </summary>
-        public DirectoryAttribute? DirectoryAttribute { get; }
+        public DirectoryAttribute? DirectoryAttribute { get; internal set; }
         /// <summary>
         /// Атрибут данных файла. null если IsDirectory = true. 
         /// </summary>

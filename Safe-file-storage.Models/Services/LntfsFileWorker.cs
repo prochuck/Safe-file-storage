@@ -412,8 +412,12 @@ namespace Safe_file_storage.Models.Services
             {
                 attributeMemoryStream = attribute.GetDataAsStream();
             }
+            else
+            {
+                WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
+            }
             WriteAttributeFromStream(mftNo, attributeNo, _fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key, attributeMemoryStream, dataRuns);
-
+            
         }
 
         private void WriteAttributeFromStream(int mftNo, int attributeNo, int attributeId, Stream attributeStream, List<DataRun> dataRuns)

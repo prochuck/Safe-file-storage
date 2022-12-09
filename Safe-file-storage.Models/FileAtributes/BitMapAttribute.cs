@@ -43,7 +43,7 @@ namespace Safe_file_storage.Models.FileAtributes
         /// </summary>
         /// <param name="size">Размер запрашиваемой области</param>
         /// <returns>Массив отрезков, выделеных на запрос</returns>
-        internal DataRun[] GetSpace(int size)
+        internal List<DataRun> GetSpace(int size)
         {
             if (SpaceLeft < size)
             {
@@ -73,7 +73,7 @@ namespace Safe_file_storage.Models.FileAtributes
                 res.Add(new DataRun() { start = dataRunStart, size = pointer - dataRunStart });
             }
 
-            return res.ToArray();
+            return res;
         }
 
         /// <summary>

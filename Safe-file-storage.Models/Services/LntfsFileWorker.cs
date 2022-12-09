@@ -62,20 +62,118 @@ namespace Safe_file_storage.Models.Services
             _fileStream.Dispose();
         }
 
-        public void ExportFile(int fileMFTRecordId, string targetFileName)
+        public void ExportFile(int fileMFTRecordId, string targetFilePath)
         {
-            throw new NotImplementedException();
+            
+
+            FileModel file = ReadFileHeader(fileMFTRecordId);
+            if (file.IsDirectory)
+            {
+                if (Directory.Exists(targetFilePath))
+                {
+                    throw new Exception("Директория с таким именем уже существует");
+                }
+                DirectoryInfo createdDirectory = Directory.CreateDirectory(targetFilePath);
+                DirectoryAttribute directoryAttribute = ReadFileAttribute<DirectoryAttribute>(fileMFTRecordId);
+                
+
+             
+
+                foreach (var item in directoryAttribute.Files)
+                {
+                    FileNameAttribute fileNameAttribute = ReadFileAttribute<FileNameAttribute>(item.MFTRecordNo);
+                    if (item.IsDirectory)
+                    {
+                        ExportFile(item.MFTRecordNo, Path.Combine(createdDirectory.FullName, $"{fileNameAttribute.Name}"));
+                    }
+                    else
+                    {
+                        ExportFile(item.MFTRecordNo, Path.Combine(createdDirectory.FullName, $"{fileNameAttribute.Name}{fileNameAttribute.Extention}"));
+                    }
+                }
+            }
+            else
+            {
+                if (File.Exists(targetFilePath))
+                {
+                    throw new Exception("Файл с таким именем уже существует");
+                }
+
+                FileStream fileToWrite = File.Create(targetFilePath);
+
+                ReadAttributeToStream<DataAttribute>(fileMFTRecordId, 0, fileToWrite);
+
+                fileToWrite.Close();
+            }
         }
 
-        public FileModel ImportFile(string targetFileName)
+        public FileModel ImportFile(string targetFilePath, int directoryToWriteMFTNo)
         {
-            throw new NotImplementedException();
+            FileModel file;
+            if (File.Exists(targetFilePath))
+            {
+                FileStream fileStream = File.OpenRead(targetFilePath);
+
+
+                file = new FileModel(
+                       _mftBitMap.GetSpace(1).First().start,
+                       directoryToWriteMFTNo,
+                       new FileNameAttribute(Path.GetFileNameWithoutExtension(targetFilePath), fileStream.Length, Path.GetExtension(targetFilePath)),
+                       new HistoryAttribute(),
+                       new DataAttribute()
+                   );
+                WriteFileHeader(file);
+
+                // Запись данных файла без занесения их в память целиком.
+                List<DataRun> dataRuns = _BitMapBitMap.GetSpace((int)(fileStream.Length / _configuration.ClusterSize) +
+                    (fileStream.Length % _configuration.ClusterSize == 0 ? 0 : 1));
+                WriteAttributeFromStream(
+                    file.MFTRecordNo,
+                    0,
+                    _fileAttributesId.Where(e => e.Value == typeof(DataAttribute)).First().Key,
+                    fileStream,
+                    dataRuns);
+
+                WriteAttribute(file, file.MFTRecordNo, 1, file.FileNameAttribute);
+                WriteAttribute(file, file.MFTRecordNo, 2, file.HistoryAttribute);
+                file.IsWritten = true;
+                fileStream.Close();
+            }
+            else if (Directory.Exists(targetFilePath))
+            {
+                DirectoryInfo directoryInfo=new DirectoryInfo(targetFilePath);
+
+                file = new FileModel(
+                        _mftBitMap.GetSpace(1).First().start,
+                        directoryToWriteMFTNo,
+                        new FileNameAttribute(directoryInfo.Name, 0, ""),
+                        new HistoryAttribute(),
+                        new DirectoryAttribute()
+                    );
+                foreach (var item in Directory.GetFiles(targetFilePath))
+                {
+                    file.DirectoryAttribute!.Files.Add(ImportFile(item, file.MFTRecordNo));
+                }
+                foreach (var item in Directory.GetDirectories(targetFilePath))
+                {
+
+                    file.DirectoryAttribute!.Files.Add(ImportFile(item, file.MFTRecordNo));
+                }
+                WriteFile(file);
+                file.IsWritten = true;
+            }
+            else
+            {
+                throw new FileNotFoundException(null, targetFilePath);
+            }
+            return file;
         }
+
 
         public T ReadFileAttribute<T>(int fileMFTRecordId)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + +14;
+            int position = fileMFTRecordId * _configuration.MFTRecordSize + 14;
             bool isFound = false;
             int attributeNo = 0;
             int attributeSize = 0;
@@ -101,8 +199,35 @@ namespace Safe_file_storage.Models.Services
                 throw new Exception("Attribute not found");
             }
 
-            List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordId, attributeNo);
+            
             MemoryStream attributeMemoryStream = new MemoryStream();
+
+            ReadAttributeToStream<T>(fileMFTRecordId, attributeNo, attributeMemoryStream);
+
+            T Attribute = (T)Activator.CreateInstance(typeof(T), new object[] { attributeMemoryStream });
+            return Attribute;
+        }
+
+        private void ReadAttributeToStream<T>(int fileMFTRecordId, int attributeNo, Stream targetStream)
+            where T : FileAttribute
+        {
+            int position = fileMFTRecordId * _configuration.MFTRecordSize + _configuration.AttributeHeaderSize * attributeNo + 14;
+            _fileStream.Position = position;
+            int attributeSize = 0;
+            using (BinaryReader reader = new BinaryReader(_fileStream, Encoding.Default, true))
+            {
+                int attributeId = reader.ReadInt32();
+                if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
+                {
+                    attributeSize = reader.ReadInt32();
+                }
+                else
+                {
+                    throw new Exception("Wrong attribute id");
+                }
+            }
+
+            List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordId, attributeNo);
 
             int sizeLeft = attributeSize;
             foreach (var item in dataRuns)
@@ -111,18 +236,15 @@ namespace Safe_file_storage.Models.Services
                 int sizeToRead = item.size * _configuration.ClusterSize;
                 if (item.size * _configuration.ClusterSize < sizeLeft)
                 {
-                    CopyPartOfStream(_fileStream, attributeMemoryStream, item.size * _configuration.ClusterSize);
+                    CopyPartOfStream(_fileStream, targetStream, item.size * _configuration.ClusterSize);
                     sizeLeft -= item.size * _configuration.ClusterSize;
                 }
                 else
                 {
-                    CopyPartOfStream(_fileStream, attributeMemoryStream, sizeLeft);
+                    CopyPartOfStream(_fileStream, targetStream, sizeLeft);
                     break;
                 }
             }
-
-            T Attribute = (T)Activator.CreateInstance(typeof(T), new object[] { attributeMemoryStream });
-            return Attribute;
         }
 
         public FileModel ReadFileHeader(int fileMFTRecordId)
@@ -137,7 +259,7 @@ namespace Safe_file_storage.Models.Services
                 bool isDirectory = reader.ReadBoolean();
                 res = new FileModel(mftRecordNo, parentDirectoryMftNo, isDirectory);
             }
-
+            res.IsWritten = true;
             return res;
 
         }
@@ -191,9 +313,8 @@ namespace Safe_file_storage.Models.Services
 
 
             List<DataRun> dataRuns;
-
-            int sizeInClusters = (int)(attributeMemoryStream.Length / _configuration.ClusterSize +
-               attributeMemoryStream.Length % _configuration.ClusterSize == 0 ? 0 : 1);
+            int sizeInClusters = (int)(attributeMemoryStream.Length / _configuration.ClusterSize) +
+              (attributeMemoryStream.Length % _configuration.ClusterSize == 0 ? 0 : 1);
             if (file.IsWritten)
             {
                 dataRuns = ReadDataRuns(mftNo, attributeNo);
@@ -229,14 +350,20 @@ namespace Safe_file_storage.Models.Services
             }
             else
             {
-                dataRuns = _BitMapBitMap.GetSpace(sizeInClusters).ToList();
+                dataRuns = _BitMapBitMap.GetSpace(sizeInClusters);
             }
 
+            WriteAttributeFromStream(mftNo, attributeNo, _fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key, attributeMemoryStream, dataRuns);
+
+        }
+
+        private void WriteAttributeFromStream(int mftNo, int attributeNo, int attributeId, Stream attributeStream, List<DataRun> dataRuns)
+        {
             _fileStream.Position = mftNo * _configuration.MFTRecordSize + attributeNo * _configuration.AttributeHeaderSize + 14;
             using (BinaryWriter writer = new BinaryWriter(_fileStream, Encoding.Default, true))
             {
-                writer.Write(_fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key);
-                writer.Write(attributeMemoryStream.Length);
+                writer.Write(attributeId);
+                writer.Write(attributeStream.Length);
                 writer.Write(dataRuns.Count);
                 foreach (var item in dataRuns)
                 {
@@ -244,13 +371,12 @@ namespace Safe_file_storage.Models.Services
                     writer.Write(item.size);
                 }
             }
-            attributeMemoryStream.Position = 0;
+            attributeStream.Position = 0;
             foreach (var item in dataRuns)
             {
                 _fileStream.Position = _configuration.MFTZoneSize + item.start * _configuration.ClusterSize;
-                CopyPartOfStream(attributeMemoryStream, _fileStream, item.size * _configuration.ClusterSize);
+                CopyPartOfStream(attributeStream, _fileStream, item.size * _configuration.ClusterSize);
             }
-
         }
 
         List<DataRun> ReadDataRuns(int mftNo, int attributeNo)
@@ -274,7 +400,7 @@ namespace Safe_file_storage.Models.Services
         void CopyPartOfStream(Stream source, Stream target, int bytesToCopy)
         {
             int bytesToCopyLeft = bytesToCopy;
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[64 * 1024];
             while (bytesToCopyLeft != 0)
             {
                 int toRead = buffer.Length < bytesToCopyLeft ? buffer.Length : bytesToCopyLeft;

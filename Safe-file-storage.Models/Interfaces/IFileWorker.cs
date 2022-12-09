@@ -18,10 +18,10 @@ namespace Safe_file_storage.Models.Interfaces
         /// Экспорт файла из программы.
         /// </summary>
         /// <param name="fileMFTRecordId"></param>
-        /// <param name="targetFileName"></param>
-        public void ExportFile(int fileMFTRecordId, string targetFileName);
+        /// <param name="targetFilePath"></param>
+        public void ExportFile(int fileMFTRecordId, string targetFilePath);
 
-        public FileModel ImportFile(string targetFileName);
+        public FileModel ImportFile(string targetFilePath, int directoryToWriteMFTNo);
 
         public void WriteFile(FileModel file);
 

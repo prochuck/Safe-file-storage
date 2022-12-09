@@ -13,7 +13,7 @@ namespace Safe_file_storage.Models.FileAtributes
 {
     public class DirectoryAttribute : FileAttribute
     {
-      
+
         internal List<FileModel> Files { get; }
 
         public DirectoryAttribute()
@@ -29,7 +29,7 @@ namespace Safe_file_storage.Models.FileAtributes
             {
                 while (stream.Position < reader.BaseStream.Length)
                 {
-                    Files.Add(new FileModel( reader.ReadInt32(), reader.ReadInt32(), reader.ReadBoolean()));
+                    Files.Add(new FileModel(reader.ReadInt32(), reader.ReadInt32(), reader.ReadBoolean()) { IsWritten = true });
                 }
             }
         }
@@ -43,7 +43,7 @@ namespace Safe_file_storage.Models.FileAtributes
                 memoryStream.Write(BitConverter.GetBytes(item.MFTRecordNo));
                 memoryStream.Write(BitConverter.GetBytes(item.ParentDirectoryRecordNo));
                 memoryStream.Write(BitConverter.GetBytes(item.IsDirectory));
-              
+
             }
 
             memoryStream.Seek(0, SeekOrigin.Begin);

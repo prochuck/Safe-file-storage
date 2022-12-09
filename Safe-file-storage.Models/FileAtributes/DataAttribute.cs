@@ -17,14 +17,15 @@ namespace Safe_file_storage.Models.FileAtributes
         public DataAttribute(MemoryStream stream)
         {
             stream.Position = 0;
-            _data =stream.ToArray();
+            _data = stream.ToArray();
         }
 
         public DataAttribute(byte[] data)
         {
             _data = data;
         }
-
+        public DataAttribute()
+        { }
         public override MemoryStream GetDataAsStream()
         {
             MemoryStream res = new MemoryStream();

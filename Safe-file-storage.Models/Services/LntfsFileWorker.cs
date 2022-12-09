@@ -94,7 +94,7 @@ namespace Safe_file_storage.Models.Services
 
                 _mft = ReadFileHeader(_mftRecordNo);
                 _bitMap = ReadFileHeader(_bitMapRecordNo);
-               
+
             }
 
 
@@ -154,11 +154,21 @@ namespace Safe_file_storage.Models.Services
 
         public FileModel ImportFile(string targetFilePath, int directoryToWriteMFTNo)
         {
+            FileModel file = ReadFileHeader(directoryToWriteMFTNo);
+            FileModel res = ImportSubFiles(targetFilePath, directoryToWriteMFTNo);
+            file.DirectoryAttribute = ReadFileAttribute<DirectoryAttribute>(directoryToWriteMFTNo);
+            file.DirectoryAttribute.Files.Add(res);
+            WriteAttribute(file, file.MFTRecordNo, 0, file.DirectoryAttribute);
+            return res;
+        }
+
+        public FileModel ImportSubFiles(string targetFilePath, int directoryToWriteMFTNo)
+        {
             FileModel file;
+
             if (File.Exists(targetFilePath))
             {
                 FileStream fileStream = File.OpenRead(targetFilePath);
-
 
                 file = new FileModel(
                        _mftBitMap.GetSpace(1).First().start,
@@ -196,12 +206,12 @@ namespace Safe_file_storage.Models.Services
                     );
                 foreach (var item in Directory.GetFiles(targetFilePath))
                 {
-                    file.DirectoryAttribute!.Files.Add(ImportFile(item, file.MFTRecordNo));
+                    file.DirectoryAttribute!.Files.Add(ImportSubFiles(item, file.MFTRecordNo));
                 }
                 foreach (var item in Directory.GetDirectories(targetFilePath))
                 {
 
-                    file.DirectoryAttribute!.Files.Add(ImportFile(item, file.MFTRecordNo));
+                    file.DirectoryAttribute!.Files.Add(ImportSubFiles(item, file.MFTRecordNo));
                 }
                 WriteFile(file);
             }

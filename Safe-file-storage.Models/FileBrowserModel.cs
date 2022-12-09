@@ -23,6 +23,13 @@ namespace Safe_file_storage.Models
             _fileWorker = fileWorker;
             CurrentDirectory = fileWorker.RootDirectory;
             _files = new ObservableCollection<FileModel>(CurrentDirectory.DirectoryAttribute.Files);
+
+            foreach (var item in _files)
+            {
+                item.FileNameAttribute = _fileWorker.ReadFileAttribute<FileNameAttribute>(item.MFTRecordNo);
+                item.HistoryAttribute = _fileWorker.ReadFileAttribute<HistoryAttribute>(item.MFTRecordNo);
+            }
+
             FilesInDirectory = new ReadOnlyObservableCollection<FileModel>(_files);
         }
 
@@ -34,6 +41,11 @@ namespace Safe_file_storage.Models
         {
             _fileWorker.ImportFile(filePath, CurrentDirectory.MFTRecordNo);
             UpdateFileList();
+        }
+        public void MoveToDirectory(int mftRecordNo)
+        {
+            FileModel file= _fileWorker.ReadFileHeader(mftRecordNo);
+            MoveToDirectory(file);
         }
         public void MoveToDirectory(FileModel directory)
         {

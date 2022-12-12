@@ -6,12 +6,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Services
 {
-    public class LntfsFileWorker : IFileWorker, IDisposable
+    public class LntfsSecureFileWorker : IFileWorker, IDisposable
     {
         const int _mftRecordNo = 0;
         const int _dotRecordNo = 1;
@@ -28,7 +29,7 @@ namespace Safe_file_storage.Models.Services
             {5,typeof(BitMapAttribute)}
 
         };
-
+        SymmetricAlgorithm _encryption;
 
         FileModel _mft;
         FileModel _bitMap;
@@ -53,21 +54,32 @@ namespace Safe_file_storage.Models.Services
         BitMapAttribute _bitMapBitMap;
 
         ILntfsConfiguration _configuration;
-        public LntfsFileWorker(ILntfsConfiguration configuration)
+        public LntfsSecureFileWorker(ILntfsConfiguration configuration,SymmetricAlgorithm symmetricAlgorithm)
         {
             _configuration = configuration;
+            _encryption = symmetricAlgorithm;
+
+
+         
+
 
             if (!File.Exists(_configuration.FilePath))
             {
-                File.WriteAllBytes(configuration.FilePath, new byte[configuration.FileSize]);
+                File.WriteAllBytes(configuration.FilePath, _encryption.CreateEncryptor().TransformFinalBlock(new byte[configuration.FileSize], 0, configuration.FileSize));
+
+
                 _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
+
 
                 _mftBitMap = new BitMapAttribute(configuration.MFTZoneSize / configuration.MFTRecordSize);
                 _bitMapBitMap = new BitMapAttribute((configuration.FileSize - configuration.MFTZoneSize) / configuration.ClusterSize);
 
                 FileModel _dot = new FileModel(_dotRecordNo, _dotRecordNo, new FileNameAttribute(".", 0, ""), new HistoryAttribute(), new DirectoryAttribute());
+                _dot.IsWritten = false;
                 _mft = new FileModel(_mftRecordNo, _dotRecordNo, false);
+                _mft.IsWritten = false;
                 _bitMap = new FileModel(_bitMapRecordNo, _dotRecordNo, false);
+                _bitMap.IsWritten = false;
 
                 WriteFile(_dot);
                 WriteFileHeader(_mft);
@@ -78,16 +90,15 @@ namespace Safe_file_storage.Models.Services
                 WriteAttribute(_mft, _mft.MFTRecordNo, 0, _mftBitMap);
                 WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
 
-                _fileStream.Flush();
+                //_fileStream.Flush();
                 //  _bitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
             }
             else
             {
-                if ((new FileInfo(configuration.FilePath).Length != configuration.FileSize))
-                {
-                    throw new Exception("Файл повреждён");
-                }
                 _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
+
+                DirectoryAttribute attribute = ReadFileAttribute<DirectoryAttribute>(1);
+
 
                 _bitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
                 _mftBitMap = ReadFileAttribute<BitMapAttribute>(_mftRecordNo);
@@ -98,9 +109,6 @@ namespace Safe_file_storage.Models.Services
             }
 
 
-
-            //  _mftBitMap = ReadFileAttribute<BitMapAttribute>(_mftRecordNo);
-            //  _BitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
 
         }
 
@@ -177,6 +185,8 @@ namespace Safe_file_storage.Models.Services
                        new HistoryAttribute(),
                        new DataAttribute()
                    );
+                file.IsWritten = false;
+
                 WriteFileHeader(file);
 
                 // Запись данных файла без занесения их в память целиком.
@@ -204,6 +214,8 @@ namespace Safe_file_storage.Models.Services
                         new HistoryAttribute(),
                         new DirectoryAttribute()
                     );
+                file.IsWritten = false;
+
                 foreach (var item in Directory.GetFiles(targetFilePath))
                 {
                     file.DirectoryAttribute!.Files.Add(ImportSubFiles(item, file.MFTRecordNo));
@@ -230,25 +242,30 @@ namespace Safe_file_storage.Models.Services
         public T ReadFileAttribute<T>(int fileMFTRecordId)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + 14;
+            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize;
             bool isFound = false;
             int attributeNo = 0;
             int attributeSize = 0;
             while (position + _configuration.AttributeHeaderSize <= (fileMFTRecordId + 1) * _configuration.MFTRecordSize)
             {
                 _fileStream.Position = position;
-                using (BinaryReader reader = new BinaryReader(_fileStream, Encoding.Default, true))
+
+                using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
                 {
-                    int attributeId = reader.ReadInt32();
-                    if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
+                    using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                     {
-                        attributeSize = reader.ReadInt32();
-                        isFound = true;
-                        break;
+                        int attributeId = reader.ReadInt32();
+                        if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
+                        {
+                            attributeSize = reader.ReadInt32();
+                            isFound = true;
+                            break;
+                        }
                     }
                 }
+
                 attributeNo++;
-                position += _configuration.AttributeHeaderSize;
+                position += _encryption.BlockSize;
             }
 
             if (!isFound)
@@ -268,38 +285,46 @@ namespace Safe_file_storage.Models.Services
         private void ReadAttributeToStream<T>(int fileMFTRecordId, int attributeNo, Stream targetStream)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + _configuration.AttributeHeaderSize * attributeNo + 14;
+            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize * (attributeNo + 1);
             _fileStream.Position = position;
             int attributeSize = 0;
-            using (BinaryReader reader = new BinaryReader(_fileStream, Encoding.Default, true))
+            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
             {
-                int attributeId = reader.ReadInt32();
-                if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
+                using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
-                    attributeSize = reader.ReadInt32();
-                }
-                else
-                {
-                    throw new Exception("Wrong attribute id");
+                    int attributeId = reader.ReadInt32();
+                    if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
+                    {
+                        attributeSize = reader.ReadInt32();
+                    }
+                    else
+                    {
+                        throw new Exception("Wrong attribute id");
+                    }
                 }
             }
-
             List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordId, attributeNo);
+
+            byte[] bytes = new byte[attributeSize];
 
             int sizeLeft = attributeSize;
             foreach (var item in dataRuns)
             {
                 _fileStream.Position = _configuration.MFTZoneSize + item.start * _configuration.ClusterSize;
-                int sizeToRead = item.size * _configuration.ClusterSize;
-                if (item.size * _configuration.ClusterSize < sizeLeft)
+                using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
                 {
-                    CopyPartOfStream(_fileStream, targetStream, item.size * _configuration.ClusterSize);
-                    sizeLeft -= item.size * _configuration.ClusterSize;
-                }
-                else
-                {
-                    CopyPartOfStream(_fileStream, targetStream, sizeLeft);
-                    break;
+                    int sizeToRead = item.size * _configuration.ClusterSize;
+                    if (item.size * _configuration.ClusterSize < sizeLeft)
+                    {
+                        CopyPartOfStream(crypto, targetStream, item.size * _configuration.ClusterSize);
+
+                        sizeLeft -= item.size * _configuration.ClusterSize;
+                    }
+                    else
+                    {
+                        CopyPartOfStream(crypto, targetStream, sizeLeft);
+                        break;
+                    }
                 }
             }
         }
@@ -309,12 +334,15 @@ namespace Safe_file_storage.Models.Services
 
             _fileStream.Position = fileMFTRecordId * _configuration.MFTRecordSize;
             FileModel res;
-            using (BinaryReader reader = new BinaryReader(_fileStream, Encoding.Default, true))
+            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
             {
-                int mftRecordNo = reader.ReadInt32();
-                int parentDirectoryMftNo = reader.ReadInt32();
-                bool isDirectory = reader.ReadBoolean();
-                res = new FileModel(mftRecordNo, parentDirectoryMftNo, isDirectory);
+                using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
+                {
+                    int mftRecordNo = reader.ReadInt32();
+                    int parentDirectoryMftNo = reader.ReadInt32();
+                    bool isDirectory = reader.ReadBoolean();
+                    res = new FileModel(mftRecordNo, parentDirectoryMftNo, isDirectory);
+                }
             }
             return res;
 
@@ -341,25 +369,25 @@ namespace Safe_file_storage.Models.Services
             WriteAttribute(file, file.MFTRecordNo, 1, file.FileNameAttribute);
             WriteAttribute(file, file.MFTRecordNo, 2, file.HistoryAttribute);
         }
-
         void WriteFileHeader(FileModel file)
         {
             _fileStream.Position = file.MFTRecordNo * _configuration.MFTRecordSize;
-
-            using (BinaryWriter writer = new BinaryWriter(_fileStream, Encoding.Default, true))
+            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateEncryptor(), CryptoStreamMode.Write, true))
             {
-                writer.Write(file.MFTRecordNo);
-                writer.Write(file.ParentDirectoryRecordNo);
-                writer.Write(file.IsDirectory);
+                using (BinaryWriter writer = new BinaryWriter(crypto, Encoding.Default, true))
+                {
+                    writer.Write(file.MFTRecordNo);
+                    writer.Write(file.ParentDirectoryRecordNo);
+                    writer.Write(file.IsDirectory);
 
-                // У каждого файла кроме MFT и BITMAP одновременно может быть тольк 3 атрибута.
-                writer.Write(3);
+                    // У каждого файла кроме MFT и BITMAP одновременно может быть тольк 3 атрибута.
+                    writer.Write(3);
+                }
             }
         }
-
         void WriteAttribute(FileModel file, int mftNo, int attributeNo, FileAttribute attribute)
         {
-            int position = mftNo * _configuration.MFTRecordSize + attributeNo * _configuration.AttributeHeaderSize + 14;
+            int position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
             if (position > (mftNo + 1) * _configuration.MFTRecordSize)
             {
                 throw new ArgumentOutOfRangeException("Попытка записи в соседнюю MFT запись");
@@ -417,49 +445,58 @@ namespace Safe_file_storage.Models.Services
                 WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
             }
             WriteAttributeFromStream(mftNo, attributeNo, _fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key, attributeMemoryStream, dataRuns);
-            
+
         }
 
         private void WriteAttributeFromStream(int mftNo, int attributeNo, int attributeId, Stream attributeStream, List<DataRun> dataRuns)
         {
-            _fileStream.Position = mftNo * _configuration.MFTRecordSize + attributeNo * _configuration.AttributeHeaderSize + 14;
-            using (BinaryWriter writer = new BinaryWriter(_fileStream, Encoding.Default, true))
+            _fileStream.Position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
+            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateEncryptor(), CryptoStreamMode.Write, true))
             {
-                writer.Write(attributeId);
-                writer.Write(attributeStream.Length);
-                writer.Write(dataRuns.Count);
-                foreach (var item in dataRuns)
+                using (BinaryWriter writer = new BinaryWriter(crypto, Encoding.Default, true))
                 {
-                    writer.Write(item.start);
-                    writer.Write(item.size);
+                    writer.Write(attributeId);
+                    writer.Write(attributeStream.Length);
+                    writer.Write(dataRuns.Count);
+                    foreach (var item in dataRuns)
+                    {
+                        writer.Write(item.start);
+                        writer.Write(item.size);
+                    }
                 }
             }
             attributeStream.Position = 0;
             foreach (var item in dataRuns)
             {
                 _fileStream.Position = _configuration.MFTZoneSize + item.start * _configuration.ClusterSize;
-                CopyPartOfStream(attributeStream, _fileStream, item.size * _configuration.ClusterSize);
+                using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateEncryptor(), CryptoStreamMode.Write, true))
+                {
+                    CopyPartOfStream(attributeStream, crypto, item.size * _configuration.ClusterSize);
+                }
             }
         }
-
         List<DataRun> ReadDataRuns(int mftNo, int attributeNo)
         {
-            _fileStream.Position = mftNo * _configuration.MFTRecordSize + attributeNo * _configuration.AttributeHeaderSize + 14 + 12;
+            _fileStream.Position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
 
             List<DataRun> dataRuns = new List<DataRun>();
-            using (BinaryReader reader = new BinaryReader(_fileStream, Encoding.Default, true))
+            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
             {
-                int dataRunsCount = reader.ReadInt32();
-                for (int i = 0; i < dataRunsCount; i++)
+                using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
-                    int dataRunStart = reader.ReadInt32();
-                    int dataRunSize = reader.ReadInt32();
-                    dataRuns.Add(new DataRun() { start = dataRunStart, size = dataRunSize });
+                    int id = reader.ReadInt32();
+                    long len = reader.ReadInt64();
+                    int dataRunsCount = reader.ReadInt32();
+                    for (int i = 0; i < dataRunsCount; i++)
+                    {
+                        int dataRunStart = reader.ReadInt32();
+                        int dataRunSize = reader.ReadInt32();
+                        dataRuns.Add(new DataRun() { start = dataRunStart, size = dataRunSize });
+                    }
                 }
             }
             return dataRuns;
         }
-
         void CopyPartOfStream(Stream source, Stream target, int bytesToCopy)
         {
             int bytesToCopyLeft = bytesToCopy;
@@ -485,12 +522,12 @@ namespace Safe_file_storage.Models.Services
         /// 8  | Is Directory
         /// 9  | Attibute Count
         /// 13 | Padding(size 1)
-        /// 14 | Attribute № 1 id (from _fileAttributesId)
-        /// 18 | Real size of attribute
-        /// 22 | DataRuns count
-        /// 26 | DataRun № 1 start
-        /// 30 | DataRun № 1 size
+        /// blockSize | Attribute № 1 id (from _fileAttributesId)
+        /// blockSize+4 | Real size of attribute
+        /// blockSize+8 | DataRuns count
+        /// blockSize+12 | DataRun № 1 start
+        /// blockSize+16 | DataRun № 1 size
         /// ...
-        /// 14 +  N * _configuration.AttributeHeaderSize | Attribute № N 
+        ///  N * blockSize | Attribute № N 
     }
 }

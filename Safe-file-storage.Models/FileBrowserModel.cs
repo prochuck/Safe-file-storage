@@ -15,7 +15,7 @@ namespace Safe_file_storage.Models
 
         IFileWorker _fileWorker;
         public FileModel CurrentDirectory { get; private set; }
-        public ObservableCollection<FileModel> _files;
+        ObservableCollection<FileModel> _files;
         public ReadOnlyObservableCollection<FileModel> FilesInDirectory { get; private set; }
 
         public FileBrowserModel(IFileWorker fileWorker)

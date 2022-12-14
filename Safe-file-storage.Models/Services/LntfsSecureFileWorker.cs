@@ -190,8 +190,8 @@ namespace Safe_file_storage.Models.Services
                 WriteFileHeader(file);
 
                 // Запись данных файла без занесения их в память целиком.
-                List<DataRun> dataRuns = _bitMapBitMap.GetSpace((int)(fileStream.Length / _configuration.ClusterSize) +
-                    (fileStream.Length % _configuration.ClusterSize == 0 ? 0 : 1));
+                List<DataRun> dataRuns = _bitMapBitMap.GetSpace((int)(PaddingToBlockSize(fileStream.Length) / _configuration.ClusterSize) +
+                    (PaddingToBlockSize(fileStream.Length) % _configuration.ClusterSize == 0 ? 0 : 1));
                 WriteAttributeFromStream(
                     file.MFTRecordNo,
                     0,
@@ -237,7 +237,6 @@ namespace Safe_file_storage.Models.Services
 
             return file;
         }
-
 
         public T ReadFileAttribute<T>(int fileMFTRecordId)
             where T : FileAttribute
@@ -397,8 +396,8 @@ namespace Safe_file_storage.Models.Services
 
 
             List<DataRun> dataRuns;
-            int sizeInClusters = (int)(attributeMemoryStream.Length / _configuration.ClusterSize) +
-              (attributeMemoryStream.Length % _configuration.ClusterSize == 0 ? 0 : 1);
+            int sizeInClusters = (int)(PaddingToBlockSize(attributeMemoryStream.Length) / _configuration.ClusterSize) +
+              (PaddingToBlockSize(attributeMemoryStream.Length) % _configuration.ClusterSize == 0 ? 0 : 1);
             if (file.IsWritten)
             {
                 dataRuns = ReadDataRuns(mftNo, attributeNo);
@@ -516,17 +515,22 @@ namespace Safe_file_storage.Models.Services
             target.Flush();
         }
 
+        long PaddingToBlockSize(long value)
+        {
+            return value + value % _encryption.BlockSize;
+        }
+
         /// Структура файла
-        /// 0  | MFTRecordNo
-        /// 4  | Parent Directory MFTRecordNo
-        /// 8  | Is Directory
-        /// 9  | Attibute Count
-        /// 13 | Padding(size 1)
-        /// blockSize | Attribute № 1 id (from _fileAttributesId)
-        /// blockSize+4 | Real size of attribute
-        /// blockSize+8 | DataRuns count
-        /// blockSize+12 | DataRun № 1 start
-        /// blockSize+16 | DataRun № 1 size
+        ///                       0| MFTRecordNo
+        ///                       4| Parent Directory MFTRecordNo
+        ///                       8| Is Directory
+        ///                       9| Attibute Count
+        ///                      13| Padding(size 1)
+        ///   _encryption.blockSize| Attribute № 1 id (from _fileAttributesId)
+        /// _encryption.blockSize+4| Real size of attribute
+        /// _encryption.blockSize+8| DataRuns count
+        ///_encryption.blockSize+12| DataRun № 1 start
+        ///_encryption.blockSize+16| DataRun № 1 size
         /// ...
         ///  N * blockSize | Attribute № N 
     }

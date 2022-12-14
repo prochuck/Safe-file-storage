@@ -55,6 +55,16 @@ namespace Safe_file_storage.Models
                 UpdateFileList();
             }
         }
+        public void CreateDirectory(string directoryName)
+        {
+            if (directoryName is null)
+            {
+                return;
+            }
+            FileModel newDirecory = _fileWorker.CreateDirectory(directoryName,CurrentDirectory);
+            UpdateFileList();
+        }
+
         private void UpdateFileList()
         {
             _files.Clear();
@@ -67,6 +77,7 @@ namespace Safe_file_storage.Models
             }
         }
 
+        
 
     }
 }

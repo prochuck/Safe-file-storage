@@ -18,16 +18,7 @@ namespace Safe_file_storage.Models.FileAtributes
 
 
 
-        public FileNameAttribute(MemoryStream stream)
-        {
-            stream.Position = 0;
-            using (BinaryReader reader = new BinaryReader(stream,Encoding.UTF8))
-            {
-                Name = reader.ReadString();
-                Size = reader.ReadInt64();
-                Extention = reader.ReadString();
-            }
-        }
+    
 
         public FileNameAttribute(string name, long size, string extention)
         {
@@ -35,7 +26,16 @@ namespace Safe_file_storage.Models.FileAtributes
             Size = size;
             Extention = extention;
         }
-
+        public FileNameAttribute(MemoryStream stream)
+        {
+            stream.Position = 0;
+            using (BinaryReader reader = new BinaryReader(stream, Encoding.UTF8))
+            {
+                Name = reader.ReadString();
+                Size = reader.ReadInt64();
+                Extention = reader.ReadString();
+            }
+        }
         public override MemoryStream GetDataAsStream()
         {
             MemoryStream memoryStream = new MemoryStream();

@@ -27,8 +27,17 @@ namespace Safe_file_storage.Models.Services
             {3,typeof(DirectoryAttribute)},
             {4,typeof(DataAttribute)},
             {5,typeof(BitMapAttribute)}
-
         };
+
+        static Dictionary<Type, int> _fileAttributeNo = new Dictionary<Type, int>
+        {
+            {typeof(FileNameAttribute),1},
+            {typeof(HistoryAttribute),2},
+            {typeof(DirectoryAttribute),0},
+            {typeof(DataAttribute),0},
+            {typeof(BitMapAttribute),0}
+        };
+
         SymmetricAlgorithm _encryption;
 
         FileModel _mft;
@@ -54,13 +63,13 @@ namespace Safe_file_storage.Models.Services
         BitMapAttribute _bitMapBitMap;
 
         ILntfsConfiguration _configuration;
-        public LntfsSecureFileWorker(ILntfsConfiguration configuration,SymmetricAlgorithm symmetricAlgorithm)
+        public LntfsSecureFileWorker(ILntfsConfiguration configuration, SymmetricAlgorithm symmetricAlgorithm)
         {
             _configuration = configuration;
             _encryption = symmetricAlgorithm;
 
 
-         
+
 
 
             if (!File.Exists(_configuration.FilePath))
@@ -87,8 +96,8 @@ namespace Safe_file_storage.Models.Services
 
                 _mftBitMap.GetSpace(3);
 
-                WriteAttribute(_mft, _mft.MFTRecordNo, 0, _mftBitMap);
-                WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
+                WriteAttribute(_mft, 0, _mftBitMap);
+                WriteAttribute(_bitMap, 0, _bitMapBitMap);
 
                 //_fileStream.Flush();
                 //  _bitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
@@ -154,7 +163,7 @@ namespace Safe_file_storage.Models.Services
 
                 FileStream fileToWrite = File.Create(targetFilePath);
 
-                ReadAttributeToStream<DataAttribute>(fileMFTRecordId, 0, fileToWrite);
+                ReadAttributeToStream<DataAttribute>(fileMFTRecordId, fileToWrite);
 
                 fileToWrite.Close();
             }
@@ -166,7 +175,7 @@ namespace Safe_file_storage.Models.Services
             FileModel res = ImportSubFiles(targetFilePath, directoryToWriteMFTNo);
             file.DirectoryAttribute = ReadFileAttribute<DirectoryAttribute>(directoryToWriteMFTNo);
             file.DirectoryAttribute.Files.Add(res);
-            WriteAttribute(file, file.MFTRecordNo, 0, file.DirectoryAttribute);
+            WriteAttribute(file, file.DirectoryAttribute);
             return res;
         }
 
@@ -199,8 +208,8 @@ namespace Safe_file_storage.Models.Services
                     fileStream,
                     dataRuns);
 
-                WriteAttribute(file, file.MFTRecordNo, 1, file.FileNameAttribute);
-                WriteAttribute(file, file.MFTRecordNo, 2, file.HistoryAttribute);
+                WriteAttribute(file, file.FileNameAttribute);
+                WriteAttribute(file, file.HistoryAttribute);
                 fileStream.Close();
             }
             else if (Directory.Exists(targetFilePath))
@@ -232,8 +241,8 @@ namespace Safe_file_storage.Models.Services
                 throw new FileNotFoundException(null, targetFilePath);
             }
 
-            WriteAttribute(_mft, _mft.MFTRecordNo, 0, _mftBitMap);
-            WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
+            WriteAttribute(_mft, 0, _mftBitMap);
+            WriteAttribute(_bitMap, 0, _bitMapBitMap);
 
             return file;
         }
@@ -241,30 +250,26 @@ namespace Safe_file_storage.Models.Services
         public T ReadFileAttribute<T>(int fileMFTRecordId)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize;
+            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
             bool isFound = false;
-            int attributeNo = 0;
             int attributeSize = 0;
-            while (position + _configuration.AttributeHeaderSize <= (fileMFTRecordId + 1) * _configuration.MFTRecordSize)
-            {
-                _fileStream.Position = position;
 
-                using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+
+
+
+            _fileStream.Position = position;
+
+            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+            {
+                using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
-                    using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
+                    int attributeId = reader.ReadInt32();
+                    if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
                     {
-                        int attributeId = reader.ReadInt32();
-                        if (_fileAttributesId[attributeId] is not null && _fileAttributesId[attributeId].Equals(typeof(T)))
-                        {
-                            attributeSize = reader.ReadInt32();
-                            isFound = true;
-                            break;
-                        }
+                        attributeSize = reader.ReadInt32();
+                        isFound = true;
                     }
                 }
-
-                attributeNo++;
-                position += _encryption.BlockSize;
             }
 
             if (!isFound)
@@ -275,16 +280,16 @@ namespace Safe_file_storage.Models.Services
 
             MemoryStream attributeMemoryStream = new MemoryStream();
 
-            ReadAttributeToStream<T>(fileMFTRecordId, attributeNo, attributeMemoryStream);
+            ReadAttributeToStream<T>(fileMFTRecordId,  attributeMemoryStream);
 
             T Attribute = (T)Activator.CreateInstance(typeof(T), new object[] { attributeMemoryStream });
             return Attribute;
         }
 
-        private void ReadAttributeToStream<T>(int fileMFTRecordId, int attributeNo, Stream targetStream)
+        private void ReadAttributeToStream<T>(int fileMFTRecordId, Stream targetStream)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize * (attributeNo + 1);
+            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
             _fileStream.Position = position;
             int attributeSize = 0;
             using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
@@ -302,7 +307,7 @@ namespace Safe_file_storage.Models.Services
                     }
                 }
             }
-            List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordId, attributeNo);
+            List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordId, _fileAttributeNo[typeof(T)]);
 
             byte[] bytes = new byte[attributeSize];
 
@@ -375,15 +380,15 @@ namespace Safe_file_storage.Models.Services
 
             if (file.IsDirectory)
             {
-                WriteAttribute(file, file.MFTRecordNo, 0, file.DirectoryAttribute);
+                WriteAttribute(file, file.DirectoryAttribute);
             }
             else
             {
-                WriteAttribute(file, file.MFTRecordNo, 0, file.DataAttribute);
+                WriteAttribute(file, file.DataAttribute);
             }
 
-            WriteAttribute(file, file.MFTRecordNo, 1, file.FileNameAttribute);
-            WriteAttribute(file, file.MFTRecordNo, 2, file.HistoryAttribute);
+            WriteAttribute(file, file.FileNameAttribute);
+            WriteAttribute(file, file.HistoryAttribute);
         }
         void WriteFileHeader(FileModel file)
         {
@@ -401,10 +406,14 @@ namespace Safe_file_storage.Models.Services
                 }
             }
         }
-        void WriteAttribute(FileModel file, int mftNo, int attributeNo, FileAttribute attribute)
+        void WriteAttribute(FileModel file, FileAttribute attribute)
         {
-            int position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
-            if (position > (mftNo + 1) * _configuration.MFTRecordSize)
+            WriteAttribute(file, _fileAttributeNo[attribute.GetType()], attribute);
+        }
+        void WriteAttribute(FileModel file, int attributeNo, FileAttribute attribute)
+        {
+            int position = file.MFTRecordNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
+            if (position > (file.MFTRecordNo + 1) * _configuration.MFTRecordSize)
             {
                 throw new ArgumentOutOfRangeException("Попытка записи в соседнюю MFT запись");
             }
@@ -417,7 +426,7 @@ namespace Safe_file_storage.Models.Services
               (PaddingToBlockSize(attributeMemoryStream.Length) % _configuration.ClusterSize == 0 ? 0 : 1);
             if (file.IsWritten)
             {
-                dataRuns = ReadDataRuns(mftNo, attributeNo);
+                dataRuns = ReadDataRuns(file.MFTRecordNo, attributeNo);
                 int allocatedSize = dataRuns.Sum(e => e.size);
                 // Уравнение выделеного и реального размера в кластерах для нерезидентного атрибута.
                 if (allocatedSize < sizeInClusters)
@@ -458,9 +467,9 @@ namespace Safe_file_storage.Models.Services
             }
             else
             {
-                WriteAttribute(_bitMap, _bitMap.MFTRecordNo, 0, _bitMapBitMap);
+                WriteAttribute(_bitMap, 0, _bitMapBitMap);
             }
-            WriteAttributeFromStream(mftNo, attributeNo, _fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key, attributeMemoryStream, dataRuns);
+            WriteAttributeFromStream(file.MFTRecordNo, attributeNo, _fileAttributesId.Where(e => e.Value == attribute.GetType()).First().Key, attributeMemoryStream, dataRuns);
 
         }
 

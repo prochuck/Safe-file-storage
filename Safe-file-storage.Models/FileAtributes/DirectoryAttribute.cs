@@ -29,7 +29,7 @@ namespace Safe_file_storage.Models.FileAtributes
             {
                 while (stream.Position < reader.BaseStream.Length)
                 {
-                    Files.Add(new FileModel(reader.ReadInt32(), reader.ReadInt32(), reader.ReadBoolean()));
+                    Files.Add(new FileModel(reader.ReadInt32(), reader.ReadInt32(),true, reader.ReadBoolean()));
                 }
             }
         }

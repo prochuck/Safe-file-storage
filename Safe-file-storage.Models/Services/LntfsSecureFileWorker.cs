@@ -74,12 +74,12 @@ namespace Safe_file_storage.Models.Services
                 _mftBitMap = new BitMapAttribute(configuration.MFTZoneSize / configuration.MFTRecordSize);
                 _bitMapBitMap = new BitMapAttribute((configuration.FileSize - configuration.MFTZoneSize) / configuration.ClusterSize);
 
-                FileModel _dot = new FileModel(_dotRecordNo, _dotRecordNo, new FileNameAttribute(".", 0, ""), new HistoryAttribute(), new DirectoryAttribute());
-                _dot.IsWritten = false;
-                _mft = new FileModel(_mftRecordNo, _dotRecordNo, false);
-                _mft.IsWritten = false;
-                _bitMap = new FileModel(_bitMapRecordNo, _dotRecordNo, false);
-                _bitMap.IsWritten = false;
+                FileModel _dot = new FileModel(_dotRecordNo, _dotRecordNo, false, new FileNameAttribute(".", 0, ""), new HistoryAttribute(), new DirectoryAttribute());
+
+                _mft = new FileModel(_mftRecordNo, _dotRecordNo, false, false);
+
+                _bitMap = new FileModel(_bitMapRecordNo, _dotRecordNo, false, false);
+
 
                 WriteFile(_dot);
                 WriteFileHeader(_mft);
@@ -181,11 +181,11 @@ namespace Safe_file_storage.Models.Services
                 file = new FileModel(
                        _mftBitMap.GetSpace(1).First().start,
                        directoryToWriteMFTNo,
+                         false,
                        new FileNameAttribute(Path.GetFileNameWithoutExtension(targetFilePath), fileStream.Length, Path.GetExtension(targetFilePath)),
                        new HistoryAttribute(),
                        new DataAttribute()
                    );
-                file.IsWritten = false;
 
                 WriteFileHeader(file);
 
@@ -210,11 +210,11 @@ namespace Safe_file_storage.Models.Services
                 file = new FileModel(
                         _mftBitMap.GetSpace(1).First().start,
                         directoryToWriteMFTNo,
+                          false,
                         new FileNameAttribute(directoryInfo.Name, 0, ""),
                         new HistoryAttribute(),
                         new DirectoryAttribute()
                     );
-                file.IsWritten = false;
 
                 foreach (var item in Directory.GetFiles(targetFilePath))
                 {
@@ -340,7 +340,7 @@ namespace Safe_file_storage.Models.Services
                     int mftRecordNo = reader.ReadInt32();
                     int parentDirectoryMftNo = reader.ReadInt32();
                     bool isDirectory = reader.ReadBoolean();
-                    res = new FileModel(mftRecordNo, parentDirectoryMftNo, isDirectory);
+                    res = new FileModel(mftRecordNo, parentDirectoryMftNo, true, isDirectory);
                 }
             }
             return res;

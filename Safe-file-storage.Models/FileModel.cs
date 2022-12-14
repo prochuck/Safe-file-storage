@@ -12,7 +12,7 @@ namespace Safe_file_storage.Models
     {
 
 
-        public FileModel(int MFTRecordId, int ParentMFTRecordNo, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
+        public FileModel(int MFTRecordId, int ParentMFTRecordNo,bool isWritten, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
         {
             this.MFTRecordNo = MFTRecordId;
             this.FileNameAttribute = fileNameAttribute;
@@ -20,8 +20,9 @@ namespace Safe_file_storage.Models
             this.DirectoryAttribute = directoryAttribute;
             ParentDirectoryRecordNo = ParentMFTRecordNo;
             IsDirectory = true;
+            IsWritten = isWritten;
         }
-        public FileModel(int MFTRecordId, int ParentMFTRecordNo, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
+        public FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isWritten, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
         {
             this.MFTRecordNo = MFTRecordId;
             this.ParentDirectoryRecordNo = ParentMFTRecordNo;
@@ -29,13 +30,15 @@ namespace Safe_file_storage.Models
             this.HistoryAttribute = historyAttribute;
             this.DataAttribute = dataAttribute;
             IsDirectory = false;
+            IsWritten = isWritten;
         }
 
-        public FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isDirectory)
+        public FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isWritten,  bool isDirectory)
         {
             this.MFTRecordNo = MFTRecordId;
             IsDirectory = isDirectory;
             ParentDirectoryRecordNo = ParentMFTRecordNo;
+            IsWritten = isWritten;
         }
 
         internal bool IsWritten { get; set; } = true;

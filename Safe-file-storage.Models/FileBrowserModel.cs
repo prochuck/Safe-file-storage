@@ -33,9 +33,9 @@ namespace Safe_file_storage.Models
             FilesInDirectory = new ReadOnlyObservableCollection<FileModel>(_files);
         }
 
-        public void ExportCurrentDirectory(string targetPath)
+        public void ExportDirectory(string targetPath, int mftNo)
         {
-            _fileWorker.ExportFile(CurrentDirectory.MFTRecordNo,targetPath);
+            _fileWorker.ExportFile(mftNo, Path.Combine(targetPath, _fileWorker.ReadFileAttribute<FileNameAttribute>(mftNo).Name));
         }
         public void ImportToCurrentDirectory(string filePath)
         {
@@ -44,7 +44,7 @@ namespace Safe_file_storage.Models
         }
         public void MoveToDirectory(int mftRecordNo)
         {
-            FileModel file= _fileWorker.ReadFileHeader(mftRecordNo);
+            FileModel file = _fileWorker.ReadFileHeader(mftRecordNo);
             MoveToDirectory(file);
         }
         public void MoveToDirectory(FileModel directory)

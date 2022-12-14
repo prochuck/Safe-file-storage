@@ -48,7 +48,6 @@ namespace Safe_file_storage
             aes.Key = MD5.HashData(Encoding.UTF8.GetBytes("password"));
             aes.IV = MD5.HashData(Encoding.UTF8.GetBytes(new config().FilePath));
             fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), aes));
-            //fileBrowserModel.ImportToCurrentDirectory("dada");
             this.DataContext = new FileBrowserViewModel(fileBrowserModel);
 
 
@@ -69,17 +68,10 @@ namespace Safe_file_storage
 
             public int FileSize => 1024 * 400;
         }
-
         private void button_Copy_Click(object sender, RoutedEventArgs e)
         {
 
-            CommonOpenFileDialog openFileDialog = new CommonOpenFileDialog();
-            openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
-            openFileDialog.IsFolderPicker = true;
-            if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
-            {
-                fileBrowserModel.ExportCurrentDirectory(openFileDialog.FileName);
-            }
+            
 
 
         }

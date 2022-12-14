@@ -1,5 +1,10 @@
-﻿using Safe_file_storage.Models;
+﻿using Microsoft.Win32;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using Safe_file_storage.Models;
 using Safe_file_storage.Models.FileAtributes;
+using Safe_file_storage.Models.Interfaces;
+using Safe_file_storage.Models.Services;
+using Safe_file_storage.ViewModels;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +13,7 @@ using System.Configuration;
 using System.Configuration.Internal;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -34,25 +40,48 @@ namespace Safe_file_storage
         ReadOnlyCollection<string> Strings { get { return new ReadOnlyCollection<string>(strings); } }
 
         ObservableCollection<string> Strings2;
-
+        FileBrowserModel fileBrowserModel;
         public MainWindow()
         {
             InitializeComponent();
+            Aes aes = Aes.Create();
+            aes.Key = MD5.HashData(Encoding.UTF8.GetBytes("password"));
+            aes.IV = MD5.HashData(Encoding.UTF8.GetBytes(new config().FilePath));
+            fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), aes));
+            //fileBrowserModel.ImportToCurrentDirectory("dada");
+            this.DataContext = new FileBrowserViewModel(fileBrowserModel);
 
 
-            strings = new List<string>();
-            strings.Add("123");
-            strings.Add("124");
-
-            Strings2=new ObservableCollection<string>(Strings);
-            this.DataContext = Strings2;
-            
+            Console.WriteLine();
         }
 
-        private void button_Click(object sender, RoutedEventArgs e)
+        struct config : ILntfsConfiguration
         {
-            strings.Add("321");
-           // strings = new List<string>(new string[] { "323","321"});
+            public string FilePath => "123.bin";
+
+            public int MFTRecordSize => 1024;
+
+            public int ClusterSize => 1024;
+
+            public int MFTZoneSize => 1024 * 50;
+
+            public int AttributeHeaderSize => 200;
+
+            public int FileSize => 1024 * 400;
+        }
+
+        private void button_Copy_Click(object sender, RoutedEventArgs e)
+        {
+
+            CommonOpenFileDialog openFileDialog = new CommonOpenFileDialog();
+            openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
+            openFileDialog.IsFolderPicker = true;
+            if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                fileBrowserModel.ExportCurrentDirectory(openFileDialog.FileName);
+            }
+
+
         }
     }
 }

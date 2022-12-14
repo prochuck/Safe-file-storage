@@ -328,6 +328,23 @@ namespace Safe_file_storage.Models.Services
             }
         }
 
+        public FileModel CreateDirectory(string directoryName, FileModel parentDirectory)
+        {
+            FileModel newDirectory = new FileModel(
+                _mftBitMap.GetSpace(1).First().start,
+                parentDirectory.MFTRecordNo,
+                  false,
+                new FileNameAttribute(directoryName, 0, ""),
+                new HistoryAttribute(),
+                new DirectoryAttribute()
+
+                );
+            WriteFile(newDirectory);
+            parentDirectory.DirectoryAttribute.Files.Add(newDirectory);
+            WriteAttribute(parentDirectory, parentDirectory.DirectoryAttribute);
+            return newDirectory;
+        }
+
         public FileModel ReadFileHeader(int fileMFTRecordId)
         {
 

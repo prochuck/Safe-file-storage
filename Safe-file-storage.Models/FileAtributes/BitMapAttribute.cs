@@ -48,7 +48,7 @@ namespace Safe_file_storage.Models.FileAtributes
         {
             if (SpaceLeft < size)
             {
-                return null;
+                throw new Exception("Нет свободного места");
             }
 
             List<DataRun> res = new List<DataRun>();

@@ -35,20 +35,16 @@ namespace Safe_file_storage
     {
 
 
-        List<string> strings;
-
-        ReadOnlyCollection<string> Strings { get { return new ReadOnlyCollection<string>(strings); } }
-
-        ObservableCollection<string> Strings2;
-        FileBrowserModel fileBrowserModel;
+     
+        FileBrowserModel _fileBrowserModel;
         public MainWindow()
         {
             InitializeComponent();
             Aes aes = Aes.Create();
             aes.Key = MD5.HashData(Encoding.UTF8.GetBytes("password"));
             aes.IV = MD5.HashData(Encoding.UTF8.GetBytes(new config().FilePath));
-            fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), aes));
-            this.DataContext = new FileBrowserViewModel(fileBrowserModel);
+            _fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), aes));
+            this.DataContext = new FileBrowserViewModel(_fileBrowserModel);
 
 
             Console.WriteLine();

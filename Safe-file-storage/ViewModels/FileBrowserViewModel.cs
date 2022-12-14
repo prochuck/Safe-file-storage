@@ -28,6 +28,7 @@ namespace Safe_file_storage.ViewModels
             }
         }
 
+        public string DirectoryToCreateName { get; set; }
         public ReadOnlyObservableCollection<FileModel> FilesInDirectory
         {
             get
@@ -46,7 +47,7 @@ namespace Safe_file_storage.ViewModels
 
             ImportDirectory = new Command(e => ImportDirectoryDilaog(), null);
             ExportDirectory = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e=> _selectedFile!=null);
-            // CreateDirectory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
+            CreateDirectory = new Command(e => _fileBrowser.CreateDirectory(DirectoryToCreateName), null);
             // ViewFileHistory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
        
 
@@ -80,7 +81,7 @@ namespace Safe_file_storage.ViewModels
                 _fileBrowser.ImportToCurrentDirectory(openFileDialog.FileName);
             }
         }
-
+       
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnProperyChanged(string propertyChangedName)
         {

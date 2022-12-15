@@ -33,7 +33,7 @@ namespace Safe_file_storage.Models
             FilesInDirectory = new ReadOnlyObservableCollection<FileModel>(_files);
         }
 
-        public void ExportDirectory(string targetPath, int mftNo)
+        public void ExportFile(string targetPath, int mftNo)
         {
             _fileWorker.ExportFile(mftNo, Path.Combine(targetPath, _fileWorker.ReadFileAttribute<FileNameAttribute>(mftNo).Name));
         }
@@ -64,6 +64,12 @@ namespace Safe_file_storage.Models
             FileModel newDirecory = _fileWorker.CreateDirectory(directoryName,CurrentDirectory);
             UpdateFileList();
         }
+        public void DeleteFile(FileModel file)
+        {
+            _fileWorker.DeleteFile(file.MFTRecordNo);
+            UpdateFileList();
+        }
+
         public ReadOnlyCollection<HistoryRecord> GetFileHistory(FileModel fileModel)
         {
            return _fileWorker.ReadFileAttribute<HistoryAttribute>(fileModel.MFTRecordNo).HistoryRecords;

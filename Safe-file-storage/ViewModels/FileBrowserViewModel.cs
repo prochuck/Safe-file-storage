@@ -57,10 +57,10 @@ namespace Safe_file_storage.ViewModels
             MoveToSelectedDirectory = new Command(e => _fileBrowser.MoveToDirectory(_selectedFile), e => _selectedFile != null);
             MoveToParentDirectory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
 
-            ImportDirectory = new Command(e => ImportDirectoryDilaog(), null);
-            ExportDirectory = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e => _selectedFile != null);
+            ImportFile = new Command(e => ImportDirectoryDilaog(), null);
+            ExportFile = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e => _selectedFile != null);
             CreateDirectory = new Command(e => _fileBrowser.CreateDirectory(DirectoryToCreateName), null);
-            // ViewFileHistory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
+            DeleteFile=new  Command(e => { _fileBrowser.DeleteFile(_selectedFile); _selectedFile = null; }, e => _selectedFile != null);
 
 
         }
@@ -68,10 +68,10 @@ namespace Safe_file_storage.ViewModels
         public ICommand MoveToSelectedDirectory { get; private set; }
 
         public ICommand MoveToParentDirectory { get; private set; }
-        public ICommand ImportDirectory { get; private set; }
-        public ICommand ExportDirectory { get; private set; }
+        public ICommand ImportFile { get; private set; }
+        public ICommand ExportFile { get; private set; }
         public ICommand CreateDirectory { get; private set; }
-        public ICommand ViewFileHistory { get; private set; }
+        public ICommand DeleteFile { get; private set; }
 
         void ExportDirectoryDilaog(int mftNo)
         {
@@ -80,7 +80,7 @@ namespace Safe_file_storage.ViewModels
             openFileDialog.IsFolderPicker = true;
             if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                _fileBrowser.ExportDirectory(openFileDialog.FileName, mftNo);
+                _fileBrowser.ExportFile(openFileDialog.FileName, mftNo);
             }
         }
         void ImportDirectoryDilaog()

@@ -9,6 +9,8 @@ namespace Safe_file_storage.Models.Interfaces
 {
     public interface IFileWorker
     {
+        public FileModel RootDirectory { get; }
+
         public FileModel ReadFileHeaderAndAttributes(int fileMFTRecordId);
 
         public FileModel ReadFileHeader(int fileMFTRecordId);
@@ -27,7 +29,8 @@ namespace Safe_file_storage.Models.Interfaces
 
         public FileModel CreateDirectory(string directoryName, FileModel parentDirectory);
 
-        public FileModel RootDirectory { get; }
+        public void DeleteFile(int fileMFTRecordNo);
+
 
     }
 }

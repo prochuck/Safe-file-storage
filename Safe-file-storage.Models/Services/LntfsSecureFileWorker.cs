@@ -4,6 +4,7 @@ using Safe_file_storage.Models.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -441,11 +442,17 @@ namespace Safe_file_storage.Models.Services
             List<DataRun> dataRuns;
             int sizeInClusters = (int)(PaddingToBlockSize(attributeMemoryStream.Length) / _configuration.ClusterSize) +
               (PaddingToBlockSize(attributeMemoryStream.Length) % _configuration.ClusterSize == 0 ? 0 : 1);
+            if (sizeInClusters == 0)
+            {
+                sizeInClusters = 1;
+            }
+
             if (file.IsWritten)
             {
                 dataRuns = ReadDataRuns(file.MFTRecordNo, attributeNo);
                 int allocatedSize = dataRuns.Sum(e => e.size);
                 // Уравнение выделеного и реального размера в кластерах для нерезидентного атрибута.
+                // Т.К. в системе отсутствует возможность изменения хранимых файлов не сработает
                 if (allocatedSize < sizeInClusters)
                 {
                     dataRuns.AddRange(_bitMapBitMap.GetSpace(sizeInClusters - allocatedSize));
@@ -454,6 +461,7 @@ namespace Safe_file_storage.Models.Services
                 {
                     int pointer = dataRuns.Count - 1;
                     int sizeToFree = allocatedSize - sizeInClusters;
+
 
                     while (allocatedSize > sizeInClusters)
                     {
@@ -576,6 +584,80 @@ namespace Safe_file_storage.Models.Services
             return value + value % _cryptoService.BlockSize;
         }
 
+        public void DeleteFile(int fileMFTRecordNo)
+        {
+            FileModel fileModel = ReadFileHeader(fileMFTRecordNo);
+            FileModel parrentDirectory = ReadFileHeader(fileModel.ParentDirectoryRecordNo);
+            parrentDirectory.DirectoryAttribute = ReadFileAttribute<DirectoryAttribute>(fileModel.ParentDirectoryRecordNo);
+            parrentDirectory.DirectoryAttribute.Files.RemoveAll(e => e.MFTRecordNo == fileMFTRecordNo);
+            WriteAttribute(parrentDirectory, parrentDirectory.DirectoryAttribute);
+
+            // Запрет на удаление системных файлов.
+            if (fileMFTRecordNo < 3)
+            {
+                return;
+            }
+            if (!fileModel.IsWritten)
+            {
+                return;
+            }
+            if (fileModel.IsDirectory)
+            {
+                DirectoryAttribute directoryAttribute = ReadFileAttribute<DirectoryAttribute>(fileMFTRecordNo);
+                foreach (var item in directoryAttribute.Files)
+                {
+                    DeleteFile(item.MFTRecordNo);
+                }
+            }
+            DeleteDataRuns(ReadDataRuns(fileMFTRecordNo, 0));
+            DeleteDataRuns(ReadDataRuns(fileMFTRecordNo, 1));
+            DeleteDataRuns(ReadDataRuns(fileMFTRecordNo, 2));
+
+            _mftBitMap.FreeSpace(new DataRun() { start = fileMFTRecordNo, size = 1 });
+            WriteRandomData(fileMFTRecordNo * _configuration.MFTRecordSize, _configuration.MFTRecordSize-1);
+        }
+
+        private void DeleteDataRuns(List<DataRun> dataRuns)
+        {
+            foreach (var dataRun in dataRuns)
+            {
+                _bitMapBitMap.FreeSpace(dataRun);
+                WriteRandomData(_configuration.MFTZoneSize + dataRun.start * _configuration.ClusterSize, dataRun.size * _configuration.ClusterSize);
+            }
+        }
+
+        private void WriteRandomData(long start, int size)
+        {
+
+            Random random = new Random();
+            _fileStream.Position = start;
+            using (CryptoStream crypto = _cryptoService.CreateEncryptionStream(
+              _fileStream,
+              CryptoStreamMode.Write,
+              true,
+              random.NextInt64().ToString()))
+            {
+                using (BinaryWriter writer = new BinaryWriter(crypto, Encoding.Default, true))
+                {
+                    long sizeLeft = size;
+                    while (sizeLeft != 0)
+                    {
+                        byte[] buffer = new byte[1024];
+                        random.NextBytes(buffer);
+                        if (sizeLeft >= buffer.Length)
+                        {
+                            writer.Write(buffer);
+                            sizeLeft -= buffer.Length;
+                        }
+                        else
+                        {
+                            writer.Write(buffer, 0, (int)sizeLeft);
+                            sizeLeft = 0;
+                        }
+                    }
+                }
+            }
+        }
         /// Структура файла
         ///                       0| MFTRecordNo
         ///                       4| Parent Directory MFTRecordNo

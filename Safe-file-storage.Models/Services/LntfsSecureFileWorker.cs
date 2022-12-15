@@ -87,15 +87,17 @@ namespace Safe_file_storage.Models.Services
 
                 _bitMap = new FileModel(_bitMapRecordNo, _dotRecordNo, false, false);
 
-
-                WriteFile(_dot);
-                WriteFileHeader(_mft);
                 WriteFileHeader(_bitMap);
+                WriteAttribute(_bitMap, 0, _bitMapBitMap);
+                _bitMap.IsWritten = true;
+
+                WriteFileHeader(_mft);
+                WriteFile(_dot);
 
                 _mftBitMap.GetSpace(3);
 
                 WriteAttribute(_mft, 0, _mftBitMap);
-                WriteAttribute(_bitMap, 0, _bitMapBitMap);
+                _mft.IsWritten = true;
 
                 //_fileStream.Flush();
                 //  _bitMapBitMap = ReadFileAttribute<BitMapAttribute>(_bitMapRecordNo);
@@ -283,7 +285,6 @@ namespace Safe_file_storage.Models.Services
             MemoryStream attributeMemoryStream = new MemoryStream();
 
             ReadAttributeToStream<T>(fileMFTRecordNo, attributeMemoryStream);
-
             T Attribute = (T)Activator.CreateInstance(typeof(T), new object[] { attributeMemoryStream });
             return Attribute;
         }
@@ -463,13 +464,14 @@ namespace Safe_file_storage.Models.Services
                     int sizeToFree = allocatedSize - sizeInClusters;
 
 
-                    while (allocatedSize > sizeInClusters)
+                    while (sizeToFree != 0)
                     {
                         if (dataRuns[pointer].size < sizeToFree)
                         {
                             sizeToFree -= dataRuns[pointer].size;
                             _bitMapBitMap.FreeSpace(dataRuns[pointer]);
                             dataRuns.RemoveAt(pointer);
+                            pointer--;
                         }
                         else
                         {
@@ -480,6 +482,7 @@ namespace Safe_file_storage.Models.Services
                             sizeToFree = 0;
                         }
                     }
+
                 }
             }
             else
@@ -581,7 +584,12 @@ namespace Safe_file_storage.Models.Services
 
         long PaddingToBlockSize(long value)
         {
-            return value + value % _cryptoService.BlockSize;
+            if (value % (_cryptoService.BlockSize / 8) == 0 && value != 0)
+            {
+                return value;
+            }
+
+            return value + ((_cryptoService.BlockSize / 8) - value % (_cryptoService.BlockSize / 8));
         }
 
         public void DeleteFile(int fileMFTRecordNo)
@@ -614,7 +622,7 @@ namespace Safe_file_storage.Models.Services
             DeleteDataRuns(ReadDataRuns(fileMFTRecordNo, 2));
 
             _mftBitMap.FreeSpace(new DataRun() { start = fileMFTRecordNo, size = 1 });
-            WriteRandomData(fileMFTRecordNo * _configuration.MFTRecordSize, _configuration.MFTRecordSize-1);
+            WriteRandomData(fileMFTRecordNo * _configuration.MFTRecordSize, _configuration.MFTRecordSize - 1);
         }
 
         private void DeleteDataRuns(List<DataRun> dataRuns)

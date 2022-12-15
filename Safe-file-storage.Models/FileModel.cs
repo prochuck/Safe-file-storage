@@ -12,7 +12,7 @@ namespace Safe_file_storage.Models
     {
 
 
-        public FileModel(int MFTRecordId, int ParentMFTRecordNo,bool isWritten, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
+        internal FileModel(int MFTRecordId, int ParentMFTRecordNo,bool isWritten, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DirectoryAttribute directoryAttribute)
         {
             this.MFTRecordNo = MFTRecordId;
             this.FileNameAttribute = fileNameAttribute;
@@ -22,7 +22,7 @@ namespace Safe_file_storage.Models
             IsDirectory = true;
             IsWritten = isWritten;
         }
-        public FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isWritten, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
+        internal FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isWritten, FileNameAttribute fileNameAttribute, HistoryAttribute historyAttribute, DataAttribute dataAttribute)
         {
             this.MFTRecordNo = MFTRecordId;
             this.ParentDirectoryRecordNo = ParentMFTRecordNo;
@@ -33,7 +33,7 @@ namespace Safe_file_storage.Models
             IsWritten = isWritten;
         }
 
-        public FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isWritten,  bool isDirectory)
+        internal FileModel(int MFTRecordId, int ParentMFTRecordNo, bool isWritten,  bool isDirectory)
         {
             this.MFTRecordNo = MFTRecordId;
             IsDirectory = isDirectory;
@@ -58,7 +58,7 @@ namespace Safe_file_storage.Models
         /// <summary>
         /// Атрибут данных файла. null если IsDirectory = true. 
         /// </summary>
-        public DataAttribute? DataAttribute { get; }
+        public DataAttribute? DataAttribute { get; internal set; }
     }
 
 

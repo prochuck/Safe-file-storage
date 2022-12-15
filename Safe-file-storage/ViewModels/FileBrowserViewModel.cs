@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace Safe_file_storage.ViewModels
 {
-    internal class FileBrowserViewModel:INotifyPropertyChanged
+    internal class FileBrowserViewModel : INotifyPropertyChanged
     {
         FileBrowserModel _fileBrowser;
 
@@ -25,6 +25,7 @@ namespace Safe_file_storage.ViewModels
             {
                 _selectedFile = value;
                 OnProperyChanged(nameof(SelectedFile));
+                OnProperyChanged(nameof(FileHistory));
             }
         }
 
@@ -37,6 +38,17 @@ namespace Safe_file_storage.ViewModels
             }
         }
 
+        public List<string> FileHistory
+        {
+            get
+            {
+                if (SelectedFile is null)
+                {
+                    return new List<string>();
+                }
+                return _fileBrowser.GetFileHistory(SelectedFile).Select(e => $"{e.Time.ToString()} {e.Action.ToString()}").ToList();
+            }
+        }
 
         public FileBrowserViewModel(FileBrowserModel fileBrowser)
         {
@@ -46,10 +58,10 @@ namespace Safe_file_storage.ViewModels
             MoveToParentDirectory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
 
             ImportDirectory = new Command(e => ImportDirectoryDilaog(), null);
-            ExportDirectory = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e=> _selectedFile!=null);
+            ExportDirectory = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e => _selectedFile != null);
             CreateDirectory = new Command(e => _fileBrowser.CreateDirectory(DirectoryToCreateName), null);
             // ViewFileHistory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
-       
+
 
         }
 
@@ -68,7 +80,7 @@ namespace Safe_file_storage.ViewModels
             openFileDialog.IsFolderPicker = true;
             if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                _fileBrowser.ExportDirectory(openFileDialog.FileName,mftNo);
+                _fileBrowser.ExportDirectory(openFileDialog.FileName, mftNo);
             }
         }
         void ImportDirectoryDilaog()
@@ -81,11 +93,11 @@ namespace Safe_file_storage.ViewModels
                 _fileBrowser.ImportToCurrentDirectory(openFileDialog.FileName);
             }
         }
-       
+
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnProperyChanged(string propertyChangedName)
         {
-            PropertyChanged.Invoke(this,new PropertyChangedEventArgs(propertyChangedName));
+            PropertyChanged.Invoke(this, new PropertyChangedEventArgs(propertyChangedName));
         }
     }
 }

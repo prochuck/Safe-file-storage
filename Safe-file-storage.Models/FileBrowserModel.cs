@@ -64,6 +64,11 @@ namespace Safe_file_storage.Models
             FileModel newDirecory = _fileWorker.CreateDirectory(directoryName,CurrentDirectory);
             UpdateFileList();
         }
+        public ReadOnlyCollection<HistoryRecord> GetFileHistory(FileModel fileModel)
+        {
+           return _fileWorker.ReadFileAttribute<HistoryAttribute>(fileModel.MFTRecordNo).HistoryRecords;
+        }
+
 
         private void UpdateFileList()
         {

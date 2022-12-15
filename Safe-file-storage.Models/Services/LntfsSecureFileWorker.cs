@@ -38,7 +38,7 @@ namespace Safe_file_storage.Models.Services
             {typeof(BitMapAttribute),0}
         };
 
-        SymmetricAlgorithm _encryption;
+        ICryptoService _cryptoService;
 
         FileModel _mft;
         FileModel _bitMap;
@@ -63,18 +63,15 @@ namespace Safe_file_storage.Models.Services
         BitMapAttribute _bitMapBitMap;
 
         ILntfsConfiguration _configuration;
-        public LntfsSecureFileWorker(ILntfsConfiguration configuration, SymmetricAlgorithm symmetricAlgorithm)
+        public LntfsSecureFileWorker(ILntfsConfiguration configuration, ICryptoService crypttoService)
         {
             _configuration = configuration;
-            _encryption = symmetricAlgorithm;
-
-
-
+            _cryptoService = crypttoService;
 
 
             if (!File.Exists(_configuration.FilePath))
             {
-                File.WriteAllBytes(configuration.FilePath, _encryption.CreateEncryptor().TransformFinalBlock(new byte[configuration.FileSize], 0, configuration.FileSize));
+                File.WriteAllBytes(configuration.FilePath, _cryptoService.EncryptBlock(new byte[configuration.FileSize], configuration.FilePath));
 
 
                 _fileStream = File.Open(configuration.FilePath, FileMode.Open, FileAccess.ReadWrite);
@@ -247,10 +244,10 @@ namespace Safe_file_storage.Models.Services
             return file;
         }
 
-        public T ReadFileAttribute<T>(int fileMFTRecordId)
+        public T ReadFileAttribute<T>(int fileMFTRecordNo)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
+            int position = fileMFTRecordNo * _configuration.MFTRecordSize + _cryptoService.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
             bool isFound = false;
             int attributeSize = 0;
 
@@ -259,7 +256,11 @@ namespace Safe_file_storage.Models.Services
 
             _fileStream.Position = position;
 
-            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+            using (CryptoStream crypto = _cryptoService.CreateDecryptionStream(
+                _fileStream,
+                CryptoStreamMode.Read,
+                true,
+                _configuration.FilePath + fileMFTRecordNo.ToString()))
             {
                 using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
@@ -280,19 +281,23 @@ namespace Safe_file_storage.Models.Services
 
             MemoryStream attributeMemoryStream = new MemoryStream();
 
-            ReadAttributeToStream<T>(fileMFTRecordId,  attributeMemoryStream);
+            ReadAttributeToStream<T>(fileMFTRecordNo, attributeMemoryStream);
 
             T Attribute = (T)Activator.CreateInstance(typeof(T), new object[] { attributeMemoryStream });
             return Attribute;
         }
 
-        private void ReadAttributeToStream<T>(int fileMFTRecordId, Stream targetStream)
+        private void ReadAttributeToStream<T>(int fileMFTRecordNo, Stream targetStream)
             where T : FileAttribute
         {
-            int position = fileMFTRecordId * _configuration.MFTRecordSize + _encryption.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
+            int position = fileMFTRecordNo * _configuration.MFTRecordSize + _cryptoService.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
             _fileStream.Position = position;
             int attributeSize = 0;
-            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+            using (CryptoStream crypto = _cryptoService.CreateDecryptionStream(
+                _fileStream,
+                CryptoStreamMode.Read,
+                true,
+                _configuration.FilePath + fileMFTRecordNo.ToString()))
             {
                 using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
@@ -307,7 +312,7 @@ namespace Safe_file_storage.Models.Services
                     }
                 }
             }
-            List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordId, _fileAttributeNo[typeof(T)]);
+            List<DataRun> dataRuns = ReadDataRuns(fileMFTRecordNo, _fileAttributeNo[typeof(T)]);
 
             byte[] bytes = new byte[attributeSize];
 
@@ -315,7 +320,11 @@ namespace Safe_file_storage.Models.Services
             foreach (var item in dataRuns)
             {
                 _fileStream.Position = _configuration.MFTZoneSize + item.start * _configuration.ClusterSize;
-                using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+                using (CryptoStream crypto = _cryptoService.CreateDecryptionStream(
+                    _fileStream,
+                    CryptoStreamMode.Read,
+                    true,
+                    _configuration.FilePath + fileMFTRecordNo.ToString()))
                 {
                     int sizeToRead = item.size * _configuration.ClusterSize;
                     if (item.size * _configuration.ClusterSize < sizeLeft)
@@ -350,12 +359,16 @@ namespace Safe_file_storage.Models.Services
             return newDirectory;
         }
 
-        public FileModel ReadFileHeader(int fileMFTRecordId)
+        public FileModel ReadFileHeader(int fileMFTRecordNo)
         {
 
-            _fileStream.Position = fileMFTRecordId * _configuration.MFTRecordSize;
+            _fileStream.Position = fileMFTRecordNo * _configuration.MFTRecordSize;
             FileModel res;
-            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+            using (CryptoStream crypto = _cryptoService.CreateDecryptionStream(
+                _fileStream,
+                CryptoStreamMode.Read,
+                true,
+                _configuration.FilePath + fileMFTRecordNo.ToString()))
             {
                 using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
@@ -393,7 +406,11 @@ namespace Safe_file_storage.Models.Services
         void WriteFileHeader(FileModel file)
         {
             _fileStream.Position = file.MFTRecordNo * _configuration.MFTRecordSize;
-            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateEncryptor(), CryptoStreamMode.Write, true))
+            using (CryptoStream crypto = _cryptoService.CreateEncryptionStream(
+                _fileStream,
+                CryptoStreamMode.Write,
+                true,
+                _configuration.FilePath + file.MFTRecordNo.ToString()))
             {
                 using (BinaryWriter writer = new BinaryWriter(crypto, Encoding.Default, true))
                 {
@@ -412,7 +429,7 @@ namespace Safe_file_storage.Models.Services
         }
         void WriteAttribute(FileModel file, int attributeNo, FileAttribute attribute)
         {
-            int position = file.MFTRecordNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
+            int position = file.MFTRecordNo * _configuration.MFTRecordSize + (attributeNo + 1) * _cryptoService.BlockSize;
             if (position > (file.MFTRecordNo + 1) * _configuration.MFTRecordSize)
             {
                 throw new ArgumentOutOfRangeException("Попытка записи в соседнюю MFT запись");
@@ -475,8 +492,13 @@ namespace Safe_file_storage.Models.Services
 
         private void WriteAttributeFromStream(int mftNo, int attributeNo, int attributeId, Stream attributeStream, List<DataRun> dataRuns)
         {
-            _fileStream.Position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
-            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateEncryptor(), CryptoStreamMode.Write, true))
+            _fileStream.Position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _cryptoService.BlockSize;
+
+            using (CryptoStream crypto = _cryptoService.CreateEncryptionStream(
+                _fileStream,
+                CryptoStreamMode.Write,
+                true,
+                _configuration.FilePath + mftNo.ToString()))
             {
                 using (BinaryWriter writer = new BinaryWriter(crypto, Encoding.Default, true))
                 {
@@ -494,7 +516,11 @@ namespace Safe_file_storage.Models.Services
             foreach (var item in dataRuns)
             {
                 _fileStream.Position = _configuration.MFTZoneSize + item.start * _configuration.ClusterSize;
-                using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateEncryptor(), CryptoStreamMode.Write, true))
+                using (CryptoStream crypto = _cryptoService.CreateEncryptionStream(
+                    _fileStream,
+                    CryptoStreamMode.Write,
+                    true,
+                    _configuration.FilePath + mftNo.ToString()))
                 {
                     CopyPartOfStream(attributeStream, crypto, item.size * _configuration.ClusterSize);
                 }
@@ -502,10 +528,14 @@ namespace Safe_file_storage.Models.Services
         }
         List<DataRun> ReadDataRuns(int mftNo, int attributeNo)
         {
-            _fileStream.Position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _encryption.BlockSize;
+            _fileStream.Position = mftNo * _configuration.MFTRecordSize + (attributeNo + 1) * _cryptoService.BlockSize;
 
             List<DataRun> dataRuns = new List<DataRun>();
-            using (CryptoStream crypto = new CryptoStream(_fileStream, _encryption.CreateDecryptor(), CryptoStreamMode.Read, true))
+            using (CryptoStream crypto = _cryptoService.CreateDecryptionStream(
+                _fileStream,
+                CryptoStreamMode.Read,
+                true,
+                _configuration.FilePath + mftNo.ToString()))
             {
                 using (BinaryReader reader = new BinaryReader(crypto, Encoding.Default, true))
                 {
@@ -543,7 +573,7 @@ namespace Safe_file_storage.Models.Services
 
         long PaddingToBlockSize(long value)
         {
-            return value + value % _encryption.BlockSize;
+            return value + value % _cryptoService.BlockSize;
         }
 
         /// Структура файла

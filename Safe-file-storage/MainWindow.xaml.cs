@@ -13,6 +13,7 @@ using System.Configuration;
 using System.Configuration.Internal;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace Safe_file_storage
     {
 
 
-     
+
         FileBrowserModel _fileBrowserModel;
         public MainWindow()
         {
@@ -43,7 +44,7 @@ namespace Safe_file_storage
             Aes aes = Aes.Create();
             aes.Key = MD5.HashData(Encoding.UTF8.GetBytes("password"));
             aes.IV = MD5.HashData(Encoding.UTF8.GetBytes(new config().FilePath));
-            _fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), aes));
+            _fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), new AesCryptoService(new cryptoConfig())));
             this.DataContext = new FileBrowserViewModel(_fileBrowserModel);
 
 
@@ -64,10 +65,34 @@ namespace Safe_file_storage
 
             public int FileSize => 1024 * 400;
         }
+        struct cryptoConfig : IAesConfigureation
+        {
+            public SecureString Password
+            {
+                get
+                {
+                    SecureString res = new SecureString();
+
+                    foreach (var item in "123")
+                    {
+                        res.AppendChar(item);
+                    }
+
+                    return res;
+                }
+            }
+
+
+            public byte[] PasswordSalt => BitConverter.GetBytes(123);
+
+            public byte[] IV => MD5.HashData(BitConverter.GetBytes(123));
+
+            public HashAlgorithm HashAlgorithm => SHA256.Create();
+        }
         private void button_Copy_Click(object sender, RoutedEventArgs e)
         {
 
-            
+
 
 
         }

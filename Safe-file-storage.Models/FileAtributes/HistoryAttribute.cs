@@ -78,6 +78,6 @@ namespace Safe_file_storage.Models.FileAtributes
     }
     public enum HistoryRecordAction
     {
-        Created, Changed,
+        Created, Opened,Exported
     }
 }

@@ -41,9 +41,8 @@ namespace Safe_file_storage
         public MainWindow()
         {
             InitializeComponent();
-            Aes aes = Aes.Create();
-            aes.Key = MD5.HashData(Encoding.UTF8.GetBytes("password"));
-            aes.IV = MD5.HashData(Encoding.UTF8.GetBytes(new config().FilePath));
+
+
             _fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), new AesCryptoService(new cryptoConfig())));
             this.DataContext = new FileBrowserViewModel(_fileBrowserModel);
 

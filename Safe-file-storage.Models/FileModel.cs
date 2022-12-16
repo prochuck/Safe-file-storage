@@ -59,6 +59,7 @@ namespace Safe_file_storage.Models
         /// Атрибут данных файла. null если IsDirectory = true. 
         /// </summary>
         public DataAttribute? DataAttribute { get; internal set; }
+
     }
 
 

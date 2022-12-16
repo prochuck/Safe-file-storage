@@ -46,7 +46,7 @@ namespace Safe_file_storage.ViewModels
                 {
                     return new List<string>();
                 }
-                return _fileBrowser.GetFileHistory(SelectedFile).Select(e => $"{e.Time.ToString()} {e.Action.ToString()}").ToList();
+                return _fileBrowser.GetFileHistory(SelectedFile).Select(e => e.ToString()).ToList();
             }
         }
 

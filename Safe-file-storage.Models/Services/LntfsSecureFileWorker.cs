@@ -128,9 +128,10 @@ namespace Safe_file_storage.Models.Services
 
         public void ExportFile(int fileMFTRecordId, string targetFilePath)
         {
-
-
             FileModel file = ReadFileHeader(fileMFTRecordId);
+            file.HistoryAttribute = ReadFileAttribute<HistoryAttribute>(file.MFTRecordNo);
+            file.HistoryAttribute.AddHistoryRecord(new HistoryRecord(DateTime.Now, HistoryRecordAction.Exported));
+            WriteAttribute(file, file.HistoryAttribute);
 
             if (file.IsDirectory)
             {
@@ -251,9 +252,6 @@ namespace Safe_file_storage.Models.Services
             int position = fileMFTRecordNo * _configuration.MFTRecordSize + _cryptoService.BlockSize * (_fileAttributeNo[typeof(T)] + 1);
             bool isFound = false;
             int attributeSize = 0;
-
-
-
 
             _fileStream.Position = position;
 

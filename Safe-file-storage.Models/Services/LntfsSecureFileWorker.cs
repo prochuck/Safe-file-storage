@@ -592,6 +592,8 @@ namespace Safe_file_storage.Models.Services
             return value + ((_cryptoService.BlockSize / 8) - value % (_cryptoService.BlockSize / 8));
         }
 
+
+
         public void DeleteFile(int fileMFTRecordNo)
         {
             FileModel fileModel = ReadFileHeader(fileMFTRecordNo);
@@ -600,6 +602,11 @@ namespace Safe_file_storage.Models.Services
             parrentDirectory.DirectoryAttribute.Files.RemoveAll(e => e.MFTRecordNo == fileMFTRecordNo);
             WriteAttribute(parrentDirectory, parrentDirectory.DirectoryAttribute);
 
+            DeleteSubFiles(fileMFTRecordNo);
+        }
+        public void DeleteSubFiles(int fileMFTRecordNo)
+        {
+            FileModel fileModel = ReadFileHeader(fileMFTRecordNo);
             // Запрет на удаление системных файлов.
             if (fileMFTRecordNo < 3)
             {
@@ -614,7 +621,7 @@ namespace Safe_file_storage.Models.Services
                 DirectoryAttribute directoryAttribute = ReadFileAttribute<DirectoryAttribute>(fileMFTRecordNo);
                 foreach (var item in directoryAttribute.Files)
                 {
-                    DeleteFile(item.MFTRecordNo);
+                    DeleteSubFiles(item.MFTRecordNo);
                 }
             }
             DeleteDataRuns(ReadDataRuns(fileMFTRecordNo, 0));
@@ -622,8 +629,10 @@ namespace Safe_file_storage.Models.Services
             DeleteDataRuns(ReadDataRuns(fileMFTRecordNo, 2));
 
             _mftBitMap.FreeSpace(new DataRun() { start = fileMFTRecordNo, size = 1 });
-            WriteRandomData(fileMFTRecordNo * _configuration.MFTRecordSize, _configuration.MFTRecordSize - 1);
+            WriteRandomData(fileMFTRecordNo * _configuration.MFTRecordSize, _configuration.MFTRecordSize);
         }
+
+
 
         private void DeleteDataRuns(List<DataRun> dataRuns)
         {
@@ -636,32 +645,26 @@ namespace Safe_file_storage.Models.Services
 
         private void WriteRandomData(long start, int size)
         {
-
             Random random = new Random();
             _fileStream.Position = start;
-            using (CryptoStream crypto = _cryptoService.CreateEncryptionStream(
-              _fileStream,
-              CryptoStreamMode.Write,
-              true,
-              random.NextInt64().ToString()))
+
+            using (BinaryWriter writer = new BinaryWriter(_fileStream, Encoding.Default, true))
             {
-                using (BinaryWriter writer = new BinaryWriter(crypto, Encoding.Default, true))
+                long sizeLeft = size;
+                while (sizeLeft != 0)
                 {
-                    long sizeLeft = size;
-                    while (sizeLeft != 0)
+                    byte[] buffer = new byte[1024];
+                    random.NextBytes(buffer);
+                    _cryptoService.EncryptBlock(buffer, random.NextInt64().ToString());
+                    if (sizeLeft >= buffer.Length)
                     {
-                        byte[] buffer = new byte[1024];
-                        random.NextBytes(buffer);
-                        if (sizeLeft >= buffer.Length)
-                        {
-                            writer.Write(buffer);
-                            sizeLeft -= buffer.Length;
-                        }
-                        else
-                        {
-                            writer.Write(buffer, 0, (int)sizeLeft);
-                            sizeLeft = 0;
-                        }
+                        writer.Write(buffer);
+                        sizeLeft -= buffer.Length;
+                    }
+                    else
+                    {
+                        writer.Write(buffer, 0, (int)sizeLeft);
+                        sizeLeft = 0;
                     }
                 }
             }

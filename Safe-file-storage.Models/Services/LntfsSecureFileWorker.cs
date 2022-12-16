@@ -195,7 +195,6 @@ namespace Safe_file_storage.Models.Services
                        new HistoryAttribute(),
                        new DataAttribute()
                    );
-
                 WriteFileHeader(file);
 
                 // Запись данных файла без занесения их в память целиком.
@@ -224,7 +223,6 @@ namespace Safe_file_storage.Models.Services
                         new HistoryAttribute(),
                         new DirectoryAttribute()
                     );
-
                 foreach (var item in Directory.GetFiles(targetFilePath))
                 {
                     file.DirectoryAttribute!.Files.Add(ImportSubFiles(item, file.MFTRecordNo));
@@ -355,6 +353,7 @@ namespace Safe_file_storage.Models.Services
                 new DirectoryAttribute()
 
                 );
+            WriteAttribute(_mft, _mftBitMap);
             WriteFile(newDirectory);
             parentDirectory.DirectoryAttribute.Files.Add(newDirectory);
             WriteAttribute(parentDirectory, parentDirectory.DirectoryAttribute);
@@ -603,7 +602,11 @@ namespace Safe_file_storage.Models.Services
             WriteAttribute(parrentDirectory, parrentDirectory.DirectoryAttribute);
 
             DeleteSubFiles(fileMFTRecordNo);
+
+            WriteAttribute(_mft, _mftBitMap);
+            WriteAttribute(_bitMap, _bitMapBitMap);
         }
+
         public void DeleteSubFiles(int fileMFTRecordNo)
         {
             FileModel fileModel = ReadFileHeader(fileMFTRecordNo);

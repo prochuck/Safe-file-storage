@@ -581,10 +581,6 @@ namespace Safe_file_storage.Models.Services
 
         long PaddingToBlockSize(long value)
         {
-            if (value % (_cryptoService.BlockSize / 8) == 0 && value != 0)
-            {
-                return value;
-            }
 
             return value + ((_cryptoService.BlockSize / 8) - value % (_cryptoService.BlockSize / 8));
         }

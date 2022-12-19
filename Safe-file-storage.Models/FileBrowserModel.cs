@@ -57,7 +57,7 @@ namespace Safe_file_storage.Models
         }
         public void CreateDirectory(string directoryName)
         {
-            if (directoryName is null)
+            if (string.IsNullOrEmpty(directoryName))
             {
                 return;
             }

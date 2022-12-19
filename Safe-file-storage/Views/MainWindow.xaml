@@ -31,7 +31,7 @@
             <Button  Grid.Row="5" x:Name="button6" Command="{Binding CreateFileCommand}" Content="Создать хранилище" Height="40" VerticalAlignment="Center" />
             <Button  Grid.Row="6" x:Name="button7" Command="{Binding OpenFileCommand}" Content="Открыть хранилище" Height="40" VerticalAlignment="Center" />
         </Grid>
-        <ListBox Grid.Column="1" x:Name="listBox" SelectedItem="{Binding SelectedFile}" ItemsSource="{Binding Path= FilesInDirectory}" Margin="10,10,10,0">
+        <ListBox Grid.Column="1" x:Name="listBox" SelectedItem="{Binding SelectedFile}" ItemsSource="{Binding Path= FilesInDirectory}" Margin="10,0,10,0">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="MouseDoubleClick">
                     <i:InvokeCommandAction Command="{Binding MoveToSelectedDirectoryCommand}"/>

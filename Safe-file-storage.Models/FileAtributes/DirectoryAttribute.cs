@@ -11,7 +11,7 @@ using System.Xml.Linq;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
-    public class DirectoryAttribute : FileAttribute
+    internal class DirectoryAttribute : FileAttribute
     {
 
         internal List<FileModel> Files { get; }

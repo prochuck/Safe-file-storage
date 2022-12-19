@@ -54,11 +54,11 @@ namespace Safe_file_storage.Models
         /// <summary>
         /// Атрибут директории. null если IsDirectory = false.
         /// </summary>
-        public DirectoryAttribute? DirectoryAttribute { get; internal set; }
+        internal DirectoryAttribute? DirectoryAttribute { get; set; }
         /// <summary>
         /// Атрибут данных файла. null если IsDirectory = true. 
         /// </summary>
-        public DataAttribute? DataAttribute { get; internal set; }
+        internal DataAttribute? DataAttribute { get; set; }
 
     }
 

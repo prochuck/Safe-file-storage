@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
-    public class DataAttribute : FileAttribute
+    internal class DataAttribute : FileAttribute
     {
         byte[] _data;
 

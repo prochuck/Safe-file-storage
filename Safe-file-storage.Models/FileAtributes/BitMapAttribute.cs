@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
-    public class BitMapAttribute : FileAttribute
+    internal class BitMapAttribute : FileAttribute
     {
 
         BitArray _bitMap;

@@ -29,6 +29,7 @@ namespace Safe_file_storage.Views
         private void okButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = true;
+       
         }
     }
 }

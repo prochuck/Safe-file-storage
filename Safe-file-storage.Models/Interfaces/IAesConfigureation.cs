@@ -10,7 +10,7 @@ namespace Safe_file_storage.Models.Interfaces
 {
     public interface IAesConfigureation
     {
-        SecureString Password { get; }
+        string Password { get; }
         byte[] PasswordSalt { get; }
         /// <summary>
         /// Вектор инициализации. Должен быть длинной 8.

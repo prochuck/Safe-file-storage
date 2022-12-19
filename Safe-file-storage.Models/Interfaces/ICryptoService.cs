@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Interfaces
 {
-    public interface ICryptoService
+    public interface ICryptoService : IDisposable
     {
         /// <summary>
         /// Размер блока шифрования.
@@ -26,7 +26,7 @@ namespace Safe_file_storage.Models.Interfaces
         /// Создать CryptoStram для расшифрования.
         /// </summary>
         public CryptoStream CreateDecryptionStream(Stream stream, CryptoStreamMode mode, bool leavOpen);
-     
+
         /// <summary>
         /// Создать CryptoStram для расшифрования с вектором инициализаии, который будет получен хэшированием строки.
         /// </summary>

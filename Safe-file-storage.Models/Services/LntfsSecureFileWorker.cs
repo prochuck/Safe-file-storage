@@ -124,6 +124,7 @@ namespace Safe_file_storage.Models.Services
         public void Dispose()
         {
             _fileStream.Dispose();
+            _cryptoService.Dispose();
         }
 
         public void ExportFile(int fileMFTRecordId, string targetFilePath)

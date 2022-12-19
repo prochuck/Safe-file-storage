@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using Safe_file_storage.Configurations;
 using Safe_file_storage.Models;
 using Safe_file_storage.Models.FileAtributes;
 using Safe_file_storage.Models.Interfaces;
@@ -43,57 +44,10 @@ namespace Safe_file_storage
             InitializeComponent();
 
 
-            _fileBrowserModel = new FileBrowserModel(new LntfsSecureFileWorker(new config(), new AesCryptoService(new cryptoConfig())));
-            this.DataContext = new FileBrowserViewModel(_fileBrowserModel);
+           
+            this.DataContext = new FileBrowserViewModel();
 
-
-            Console.WriteLine();
-        }
-
-        struct config : ILntfsConfiguration
-        {
-            public string FilePath => "123.bin";
-
-            public int MFTRecordSize => 1024;
-
-            public int ClusterSize => 1024;
-
-            public int MFTZoneSize => 1024 * 50;
-
-            public int AttributeHeaderSize => 200;
-
-            public int FileSize => 1024 * 400;
-        }
-        struct cryptoConfig : IAesConfigureation
-        {
-            public SecureString Password
-            {
-                get
-                {
-                    SecureString res = new SecureString();
-
-                    foreach (var item in "123")
-                    {
-                        res.AppendChar(item);
-                    }
-
-                    return res;
-                }
-            }
-
-
-            public byte[] PasswordSalt => BitConverter.GetBytes(123);
-
-            public byte[] IV => MD5.HashData(BitConverter.GetBytes(123));
-
-            public HashAlgorithm HashAlgorithm => SHA256.Create();
-        }
-        private void button_Copy_Click(object sender, RoutedEventArgs e)
-        {
-
-
-
-
+          
         }
     }
 }

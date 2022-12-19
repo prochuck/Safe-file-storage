@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Services
 {
-    public class AesCryptoService : ICryptoService
+    public class AesCryptoService : ICryptoService, IDisposable
     {
         Aes _aes;
         IAesConfigureation _configureation;
@@ -17,22 +17,27 @@ namespace Safe_file_storage.Models.Services
 
         public AesCryptoService(IAesConfigureation configureation)
         {
-         
+
             _aes = Aes.Create();
             byte[] hasgedPassword = Rfc2898DeriveBytes.Pbkdf2(
-                Encoding.UTF8.GetBytes(configureation.Password.ToString()),
-                configureation.PasswordSalt,
+                Encoding.UTF8.GetBytes(configureation.Password),
+               SHA512.HashData(configureation.PasswordSalt),
                 100000,
                 HashAlgorithmName.SHA256,
-                256/8);
-            configureation.Password.Dispose();
+                256 / 8);
 
             _aes.Key = hasgedPassword;
 
-            _aes.IV = configureation.IV;
+            _aes.IV = MD5.HashData(configureation.IV);
             _aes.Mode = CipherMode.CBC;
             _configureation = configureation;
             _hashAlgorithm = MD5.Create();
+        }
+
+        public void Dispose()
+        {
+            _aes.Dispose();
+            _hashAlgorithm.Dispose();
         }
 
         public int BlockSize
@@ -57,7 +62,7 @@ namespace Safe_file_storage.Models.Services
 
         public CryptoStream CreateDecryptionStream(Stream stream, CryptoStreamMode mode, bool leavOpen, string IV)
         {
-            return  CreateDecryptionStream(stream, mode, leavOpen, _hashAlgorithm.ComputeHash(Encoding.ASCII.GetBytes(IV)));
+            return CreateDecryptionStream(stream, mode, leavOpen, _hashAlgorithm.ComputeHash(Encoding.ASCII.GetBytes(IV)));
         }
 
         public CryptoStream CreateEncryptionStream(Stream stream, CryptoStreamMode mode, bool leavOpen)

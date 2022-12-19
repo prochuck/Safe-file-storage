@@ -12,7 +12,7 @@
             <Label x:Name="label" Content="Пароль" HorizontalAlignment="Left" Margin="135,10,0,0" VerticalAlignment="Top"/>
             <Button x:Name="directorySelectButton" Command="{Binding SelectFileCommand}" Content="Выбрать файл" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Height="26" />
             <Label x:Name="labe4" Content="{Binding FilePath}" HorizontalAlignment="Left" Margin="92,103,0,0" VerticalAlignment="Top" Width="242"/>
-            <Button x:Name="okButton" Content="ОК" HorizontalAlignment="Left" Margin="10,223,0,0" VerticalAlignment="Top" Height="49" Width="120" Click="okButton_Click"/>
+            <Button x:Name="okButton" Content="ОК" IsDefault="True" HorizontalAlignment="Left" Margin="10,223,0,0" VerticalAlignment="Top" Height="49" Width="120" Click="okButton_Click"/>
             <Button x:Name="cancelButton" Content="Назад" IsCancel="True" HorizontalAlignment="Left" Margin="435,223,0,0" VerticalAlignment="Top" Height="49" Width="120"/>
         </Grid>
     </Grid>

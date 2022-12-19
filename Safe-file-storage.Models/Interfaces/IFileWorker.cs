@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Interfaces
 {
-    public interface IFileWorker
+    public interface IFileWorker:IDisposable
     {
         public FileModel RootDirectory { get; }
 

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models
 {
-    public class FileBrowserModel
+    public class FileBrowserModel:IDisposable
     {
 
 
@@ -88,7 +88,10 @@ namespace Safe_file_storage.Models
             }
         }
 
-        
+        public void Dispose()
+        {
+            _fileWorker.Dispose();
 
+        }
     }
 }

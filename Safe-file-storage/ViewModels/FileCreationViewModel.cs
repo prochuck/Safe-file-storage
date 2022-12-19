@@ -47,6 +47,7 @@ namespace Safe_file_storage.ViewModels
             {
                 Path=openFileDialog.FileName;
             }
+            openFileDialog.Dispose();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

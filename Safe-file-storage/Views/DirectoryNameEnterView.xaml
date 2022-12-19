@@ -1,0 +1,16 @@
+﻿<Window x:Class="Safe_file_storage.Views.DirectoryNameEnterView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Safe_file_storage.Views"
+        mc:Ignorable="d"
+        Title="DirectoryNameEnterView" Height="154" Width="285">
+    <Grid>
+        <Button x:Name="okButton" IsDefault="True" Content="Ок" HorizontalAlignment="Left" Margin="10,83,0,0" VerticalAlignment="Top" Width="51" Click="okButton_Click"/>
+        <Button x:Name="cancelButton" IsCancel="True" Content="Назад" HorizontalAlignment="Left" Margin="222,83,0,0" VerticalAlignment="Top" Width="50"/>
+        <TextBox x:Name="textBox" HorizontalAlignment="Left" Margin="10,51,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="262"/>
+        <Label x:Name="label" Content="Имя директории" HorizontalAlignment="Left" Margin="10,25,0,0" VerticalAlignment="Top"/>
+
+    </Grid>
+</Window>

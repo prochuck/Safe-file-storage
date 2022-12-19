@@ -34,7 +34,7 @@ namespace Safe_file_storage.ViewModels
             }
         }
 
-        public string DirectoryToCreateName { get; set; }
+       
         public ReadOnlyObservableCollection<FileModel> FilesInDirectory
         {
             get
@@ -62,7 +62,7 @@ namespace Safe_file_storage.ViewModels
 
             ImportFileCommand = new Command(e => ImportDirectoryDilaog(), e => (_fileBrowser is not null));
             ExportFileCommand = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e => _selectedFile is not null);
-            CreateDirectoryCommand = new Command(e => _fileBrowser.CreateDirectory(DirectoryToCreateName), e => (_fileBrowser is not null));
+            CreateDirectoryCommand = new Command(e => _fileBrowser.CreateDirectory(OpenDirectoryNameEnterDialog()), e => (_fileBrowser is not null));
             DeleteFileCommand = new Command(e => { _fileBrowser.DeleteFile(_selectedFile); _selectedFile = null; }, e => _selectedFile is not null);
             CreateFileCommand = new Command(e => OpenFileCreationDialog(), null);
             OpenFileCommand = new Command(e => OpenFileSelectionDialog(), null);
@@ -81,7 +81,18 @@ namespace Safe_file_storage.ViewModels
         public ICommand CreateFileCommand { get; private set; }
 
 
-
+        string OpenDirectoryNameEnterDialog()
+        {
+            DirectoryNameEnterView directoryNameEnterView = new DirectoryNameEnterView();
+            if ((bool)directoryNameEnterView.ShowDialog())
+            {
+                return directoryNameEnterView.Input;
+            }
+            else
+            {
+                return "";
+            }
+        }
         void OpenFileCreationDialog()
         {
             FileCreationView openFileDialog = new FileCreationView();

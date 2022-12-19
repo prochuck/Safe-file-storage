@@ -1,5 +1,6 @@
 ﻿using Microsoft.WindowsAPICodePack.Dialogs;
 using Safe_file_storage.Models;
+using Safe_file_storage.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace Safe_file_storage.ViewModels
@@ -54,25 +56,80 @@ namespace Safe_file_storage.ViewModels
         {
             _fileBrowser = fileBrowser;
 
-            MoveToSelectedDirectory = new Command(e => _fileBrowser.MoveToDirectory(_selectedFile), e => _selectedFile != null);
-            MoveToParentDirectory = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), null);
+            MoveToSelectedDirectoryCommand = new Command(e => _fileBrowser.MoveToDirectory(_selectedFile), e => _selectedFile is not null);
+            MoveToParentDirectoryCommand = new Command(e => _fileBrowser.MoveToDirectory(_fileBrowser.CurrentDirectory.ParentDirectoryRecordNo), e => (_fileBrowser is not null));
 
-            ImportFile = new Command(e => ImportDirectoryDilaog(), null);
-            ExportFile = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e => _selectedFile != null);
-            CreateDirectory = new Command(e => _fileBrowser.CreateDirectory(DirectoryToCreateName), null);
-            DeleteFile=new  Command(e => { _fileBrowser.DeleteFile(_selectedFile); _selectedFile = null; }, e => _selectedFile != null);
-
+            ImportFileCommand = new Command(e => ImportDirectoryDilaog(), e => (_fileBrowser is not null));
+            ExportFileCommand = new Command(e => ExportDirectoryDilaog(_selectedFile.MFTRecordNo), e => _selectedFile is not null);
+            CreateDirectoryCommand = new Command(e => _fileBrowser.CreateDirectory(DirectoryToCreateName), e => (_fileBrowser is not null));
+            DeleteFileCommand = new Command(e => { _fileBrowser.DeleteFile(_selectedFile); _selectedFile = null; }, e => _selectedFile is not null);
+            CreateFileCommand = new Command(e => OpenFileCreationDialog(), null);
+            OpenFileCommand = new Command(e => OpenFileSelectionDialog(), null);
 
         }
 
-        public ICommand MoveToSelectedDirectory { get; private set; }
+        public ICommand MoveToSelectedDirectoryCommand { get; private set; }
 
-        public ICommand MoveToParentDirectory { get; private set; }
-        public ICommand ImportFile { get; private set; }
-        public ICommand ExportFile { get; private set; }
-        public ICommand CreateDirectory { get; private set; }
-        public ICommand DeleteFile { get; private set; }
+        public ICommand MoveToParentDirectoryCommand { get; private set; }
+        public ICommand ImportFileCommand { get; private set; }
+        public ICommand ExportFileCommand { get; private set; }
+        public ICommand CreateDirectoryCommand { get; private set; }
+        public ICommand DeleteFileCommand { get; private set; }
 
+        public ICommand OpenFileCommand { get; private set; }
+        public ICommand CreateFileCommand { get; private set; }
+
+
+
+        void OpenFileCreationDialog()
+        {
+            FileCreationView openFileDialog = new FileCreationView();
+
+            if ((bool)openFileDialog.ShowDialog())
+            {
+                FileCreationViewModel fileCreationViewModel = openFileDialog.DataContext as FileCreationViewModel;
+                if (fileCreationViewModel.Password is null || fileCreationViewModel.Password.Length < 5)
+                {
+                    MessageBox.Show("Пароль должен содержать как минимум 6 знаков");
+                    return;
+                }
+                if (fileCreationViewModel.Path is null || !Directory.Exists(fileCreationViewModel.Path))
+                {
+                    MessageBox.Show("Неверный путь к папке");
+                    return;
+                }
+                if (fileCreationViewModel.FileName is null || File.Exists(Path.Combine(fileCreationViewModel.Path, fileCreationViewModel.FileName)))
+                {
+                    MessageBox.Show("Файл с таким именем уже существует");
+                    return;
+                }
+                if (fileCreationViewModel.Size < 100)
+                {
+                    MessageBox.Show("Файл должен быть больше 100 КБ");
+                    return;
+                }
+            }
+        }
+        void OpenFileSelectionDialog()
+        {
+
+            FileSelectionView openFileDialog = new FileSelectionView();
+
+            if ((bool)openFileDialog.ShowDialog())
+            {
+                FileSelectionViewModel fileCreationViewModel = openFileDialog.DataContext as FileSelectionViewModel;
+                if (fileCreationViewModel.Password is null || fileCreationViewModel.Password.Length < 5)
+                {
+                    MessageBox.Show("Пароль должен содержать как минимум 6 знаков");
+                    return;
+                }
+                if (fileCreationViewModel.FilePath is null || !File.Exists(fileCreationViewModel.FilePath))
+                {
+                    MessageBox.Show("Неверный путь к папке");
+                    return;
+                }
+            }
+        }
         void ExportDirectoryDilaog(int mftNo)
         {
             CommonOpenFileDialog openFileDialog = new CommonOpenFileDialog();
@@ -98,6 +155,7 @@ namespace Safe_file_storage.ViewModels
         private void OnProperyChanged(string propertyChangedName)
         {
             PropertyChanged.Invoke(this, new PropertyChangedEventArgs(propertyChangedName));
+            FileCreationView fileCreationView = new FileCreationView();
         }
     }
 }

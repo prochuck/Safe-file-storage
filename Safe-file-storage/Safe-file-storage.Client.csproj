@@ -17,4 +17,17 @@
     <ProjectReference Include="..\Safe-file-storage.Models\Safe-file-storage.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Views\FileCreatinView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Views\FileCreatinView.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
 </Project>

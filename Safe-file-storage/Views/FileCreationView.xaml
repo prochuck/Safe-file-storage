@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Safe_file_storage.Views" xmlns:viewmodels="clr-namespace:Safe_file_storage.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:FileCreationViewModel}"
         mc:Ignorable="d"
-        Title="FileCreationView" Height="298" Width="565">
+        Title="FileCreationView" Height="325" Width="565">
     <Grid>
         <TextBox x:Name="passwordBox" Text="{Binding Password}" HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Height="26"/>
         <TextBox x:Name="nameBox" Text="{Binding FileName}" HorizontalAlignment="Left" Margin="10,72,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="120" Height="26"/>

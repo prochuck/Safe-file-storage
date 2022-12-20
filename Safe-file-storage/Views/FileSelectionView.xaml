@@ -5,15 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Safe_file_storage.Views" xmlns:viewmodels="clr-namespace:Safe_file_storage.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:FileSelectionViewModel}"
         mc:Ignorable="d"
-        Title="FileSelectView" Height="450" Width="800">
+        Title="FileSelectView" Height="310" Width="438">
     <Grid>
         <Grid>
             <TextBox x:Name="passwordBox" Text="{Binding Password}" HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Height="26"/>
             <Label x:Name="label" Content="Пароль" HorizontalAlignment="Left" Margin="135,10,0,0" VerticalAlignment="Top"/>
             <Button x:Name="directorySelectButton" Command="{Binding SelectFileCommand}" Content="Выбрать файл" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Height="26" />
             <Label x:Name="labe4" Content="{Binding FilePath}" HorizontalAlignment="Left" Margin="92,103,0,0" VerticalAlignment="Top" Width="242"/>
-            <Button x:Name="okButton" Content="ОК" IsDefault="True" HorizontalAlignment="Left" Margin="10,223,0,0" VerticalAlignment="Top" Height="49" Width="120" Click="okButton_Click"/>
-            <Button x:Name="cancelButton" Content="Назад" IsCancel="True" HorizontalAlignment="Left" Margin="435,223,0,0" VerticalAlignment="Top" Height="49" Width="120"/>
+            <Button x:Name="okButton" Content="ОК" IsDefault="True" HorizontalAlignment="Left" Margin="10,144,0,0" VerticalAlignment="Top" Height="49" Width="120" Click="okButton_Click"/>
+            <Button x:Name="cancelButton" Content="Назад" IsCancel="True" HorizontalAlignment="Left" Margin="233,144,0,0" VerticalAlignment="Top" Height="49" Width="120"/>
         </Grid>
     </Grid>
 </Window>

@@ -9,10 +9,6 @@ namespace Safe_file_storage.Models.Interfaces
 {
     public interface ILntfsConfiguration
     {
-        string FilePath { get; }
-        /// <summary>
-        /// Размер записи MFT в байтах.
-        /// </summary>
         int MFTRecordSize { get; }
         /// <summary>
         /// Размер кластера байтах.
@@ -29,6 +25,6 @@ namespace Safe_file_storage.Models.Interfaces
         /// <summary>
         /// Размер зоны mft.
         /// </summary>
-        int FileSize { get; }
+
     }
 }

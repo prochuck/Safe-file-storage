@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Services.Interfaces
 {
-    internal interface IFileSystemStreamStream : IDisposable
+    public interface IFileSystemStream : IDisposable
     {
         /// <summary>
         /// Поток с которым будет работать сервис файловой системы
         /// </summary>
         Stream LntfsStream { get; }
-        bool IsInitialize { get; }
     }
 }

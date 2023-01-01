@@ -13,7 +13,9 @@ namespace Safe_file_storage.Models.FileAtributes
 {
     internal class DirectoryAttribute : FileAttribute
     {
-
+        /// <summary>
+        /// Список файлов в директории.
+        /// </summary>
         internal List<FileModel> Files { get; }
 
         public DirectoryAttribute()

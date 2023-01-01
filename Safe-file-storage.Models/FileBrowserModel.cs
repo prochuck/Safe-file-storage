@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models
 {
-    public class FileBrowserModel:IDisposable
+    public class FileBrowserModel : IDisposable
     {
 
 
@@ -20,7 +20,7 @@ namespace Safe_file_storage.Models
 
         internal FileBrowserModel(IFileSystemService fileWorker)
         {
-            
+
             _fileWorker = fileWorker;
             CurrentDirectory = fileWorker.RootDirectory;
             _files = new ObservableCollection<FileModel>(CurrentDirectory.DirectoryAttribute.Files);
@@ -34,13 +34,13 @@ namespace Safe_file_storage.Models
             FilesInDirectory = new ReadOnlyObservableCollection<FileModel>(_files);
         }
 
-        public void ExportFile(string targetPath, int mftNo)
+        public async Task ExportFileAsync(string targetPath, int mftNo)
         {
-            _fileWorker.ExportFile(mftNo, Path.Combine(targetPath, _fileWorker.ReadFileAttribute<FileNameAttribute>(mftNo).Name));
+            await Task.Run(() => _fileWorker.ExportFile(mftNo, Path.Combine(targetPath, _fileWorker.ReadFileAttribute<FileNameAttribute>(mftNo).Name)));
         }
-        public void ImportToCurrentDirectory(string filePath)
+        public async Task ImportToCurrentDirectoryAsync(string filePath)
         {
-            _fileWorker.ImportFile(filePath, CurrentDirectory.MFTRecordNo);
+            await Task.Run(() => _fileWorker.ImportFile(filePath, CurrentDirectory.MFTRecordNo));
             UpdateFileList();
         }
         public void MoveToDirectory(int mftRecordNo)
@@ -62,7 +62,7 @@ namespace Safe_file_storage.Models
             {
                 return;
             }
-            FileModel newDirecory = _fileWorker.CreateDirectory(directoryName,CurrentDirectory);
+            FileModel newDirecory = _fileWorker.CreateDirectory(directoryName, CurrentDirectory);
             UpdateFileList();
         }
         public void DeleteFile(FileModel file)
@@ -73,7 +73,7 @@ namespace Safe_file_storage.Models
 
         public ReadOnlyCollection<HistoryRecord> GetFileHistory(FileModel fileModel)
         {
-           return _fileWorker.ReadFileAttribute<HistoryAttribute>(fileModel.MFTRecordNo).HistoryRecords;
+            return _fileWorker.ReadFileAttribute<HistoryAttribute>(fileModel.MFTRecordNo).HistoryRecords;
         }
 
 

@@ -34,7 +34,7 @@ namespace Safe_file_storage.ViewModels
             }
         }
 
-       
+
         public ReadOnlyObservableCollection<FileModel> FilesInDirectory
         {
             get
@@ -150,7 +150,7 @@ namespace Safe_file_storage.ViewModels
                         lntfsConfiguration,
                         aesCryptoConfiguration
                         );
-                       
+
                     _selectedFile = null;
 
 
@@ -231,7 +231,9 @@ namespace Safe_file_storage.ViewModels
             openFileDialog.IsFolderPicker = true;
             if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                _fileBrowser.ExportFile(openFileDialog.FileName, mftNo);
+                WaitView waitView = new WaitView(_fileBrowser.ExportFileAsync(openFileDialog.FileName, mftNo));
+                waitView.ShowDialog();
+
             }
         }
         void ImportDirectoryDilaog()
@@ -241,7 +243,9 @@ namespace Safe_file_storage.ViewModels
             openFileDialog.IsFolderPicker = true;
             if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                _fileBrowser.ImportToCurrentDirectory(openFileDialog.FileName);
+                WaitView waitView = new WaitView(_fileBrowser.ImportToCurrentDirectoryAsync(openFileDialog.FileName));
+                waitView.ShowDialog();
+
             }
         }
 

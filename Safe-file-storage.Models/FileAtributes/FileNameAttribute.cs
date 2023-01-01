@@ -11,14 +11,18 @@ namespace Safe_file_storage.Models.FileAtributes
 {
     public class FileNameAttribute : FileAttribute
     {
+        /// <summary>
+        /// Имя файла.
+        /// </summary>
         public string Name { get; internal set; }
+        /// <summary>
+        /// Размер файла.
+        /// </summary>
         public long Size { get; internal set; }
+        /// <summary>
+        /// Расширение файла.
+        /// </summary>
         public string Extention { get; internal set; }
-
-
-
-
-    
 
         public FileNameAttribute(string name, long size, string extention)
         {

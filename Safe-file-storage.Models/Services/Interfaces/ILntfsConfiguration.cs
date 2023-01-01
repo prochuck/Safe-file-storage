@@ -18,7 +18,6 @@ namespace Safe_file_storage.Models.Interfaces
         /// Размер кластера байтах.
         /// </summary>
         int ClusterSize { get; }
-
         /// <summary>
         /// Размер заголовка атрибута.
         /// </summary>

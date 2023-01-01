@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.FileAtributes
 {
+   
     internal class BitMapAttribute : FileAttribute
     {
 
@@ -32,8 +33,13 @@ namespace Safe_file_storage.Models.FileAtributes
                 _bitMap = new BitArray(reader.ReadBytes(Size));
             }
         }
-
+        /// <summary>
+        /// Общий разер bitmap
+        /// </summary>
         public int Size { get; }
+        /// <summary>
+        /// Не занятое место в bitmap
+        /// </summary>
         public int SpaceLeft { get; private set; }
 
 
@@ -92,6 +98,10 @@ namespace Safe_file_storage.Models.FileAtributes
                 pointer++;
             }
         }
+        /// <summary>
+        /// Запрос на освобождение области определённого размера в битовой карте .
+        /// </summary>
+        /// <param name="dataRun">Освобождаемая область</param>
         internal void FreeSpace(DataRun dataRun, int size)
         {
             if (dataRun.size <= size)
@@ -124,9 +134,19 @@ namespace Safe_file_storage.Models.FileAtributes
             return res;
         }
     }
+    /// <summary>
+    /// Представляет отрезок области в BitMap.
+    /// подробнее <see href="https://flatcap.github.io/linux-ntfs/ntfs/concepts/data_runs.html">тут</see>
+    /// </summary>
     internal struct DataRun
     {
+        /// <summary>
+        /// Начало datarun.
+        /// </summary>
         public int start;
+        /// <summary>
+        /// Конец datarun
+        /// </summary>
         public int size;
     }
 }

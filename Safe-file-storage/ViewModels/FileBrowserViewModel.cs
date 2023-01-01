@@ -145,7 +145,7 @@ namespace Safe_file_storage.ViewModels
                     };
 
                     _fileBrowser = new FileBrowserModel(
-                         new LntfsSecureFileWorker(
+                         new LntfsSecureFileSystemService(
                              lntfsConfiguration,
                             new AesCryptoService(aesCryptoConfiguration)));
                     _selectedFile = null;
@@ -202,7 +202,7 @@ namespace Safe_file_storage.ViewModels
                     };
 
                     _fileBrowser = new FileBrowserModel(
-                         new LntfsSecureFileWorker(
+                         new LntfsSecureFileSystemService(
                              lntfsConfiguration,
                             new AesCryptoService(aesCryptoConfiguration)));
                     _selectedFile = null;

@@ -10,10 +10,16 @@ namespace Safe_file_storage.Models.Interfaces
 {
     public interface IAesConfigureation
     {
+        /// <summary>
+        /// Пароль, из которого будет сгенерирован ключь.
+        /// </summary>
         string Password { get; }
+        /// <summary>
+        /// Соль для пароля.
+        /// </summary>
         byte[] PasswordSalt { get; }
         /// <summary>
-        /// Вектор инициализации. Должен быть длинной 8.
+        /// Вектор инициализации.
         /// </summary>
         byte[] IV { get; }
 

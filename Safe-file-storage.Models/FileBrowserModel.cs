@@ -13,12 +13,12 @@ namespace Safe_file_storage.Models
     {
 
 
-        IFileWorker _fileWorker;
+        IFileSystemService _fileWorker;
         public FileModel CurrentDirectory { get; private set; }
         ObservableCollection<FileModel> _files;
         public ReadOnlyObservableCollection<FileModel> FilesInDirectory { get; private set; }
 
-        public FileBrowserModel(IFileWorker fileWorker)
+        public FileBrowserModel(IFileSystemService fileWorker)
         {
             
             _fileWorker = fileWorker;

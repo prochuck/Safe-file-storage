@@ -36,8 +36,14 @@ namespace Safe_file_storage.Models.FileAtributes
         }
 
         List<HistoryRecord> _historyRecords;
+        /// <summary>
+        /// Список событий.
+        /// </summary>
         public ReadOnlyCollection<HistoryRecord> HistoryRecords { get { return new ReadOnlyCollection<HistoryRecord>(_historyRecords); } }
-
+        /// <summary>
+        /// Добавить событие в список событий.
+        /// </summary>
+        /// <param name="record"></param>
         internal void AddHistoryRecord(HistoryRecord record)
         {
             _historyRecords.Add(record);

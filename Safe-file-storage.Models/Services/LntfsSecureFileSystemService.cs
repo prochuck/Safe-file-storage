@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Services
 {
-    public class LntfsSecureFileWorker : IFileWorker, IDisposable
+    public class LntfsSecureFileSystemService : IFileSystemService, IDisposable
     {
         const int _mftRecordNo = 0;
         const int _dotRecordNo = 1;
@@ -64,7 +64,7 @@ namespace Safe_file_storage.Models.Services
         BitMapAttribute _bitMapBitMap;
 
         ILntfsConfiguration _configuration;
-        public LntfsSecureFileWorker(ILntfsConfiguration configuration, ICryptoService crypttoService)
+        public LntfsSecureFileSystemService(ILntfsConfiguration configuration, ICryptoService crypttoService)
         {
             _configuration = configuration;
             _cryptoService = crypttoService;

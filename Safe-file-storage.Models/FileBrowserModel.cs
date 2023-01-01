@@ -20,6 +20,7 @@ namespace Safe_file_storage.Models
 
         public FileBrowserModel(IFileWorker fileWorker)
         {
+            
             _fileWorker = fileWorker;
             CurrentDirectory = fileWorker.RootDirectory;
             _files = new ObservableCollection<FileModel>(CurrentDirectory.DirectoryAttribute.Files);

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Safe_file_storage.Models.Services
 {
-    public class AesCryptoService : ICryptoService, IDisposable
+    internal class AesCryptoService : ICryptoService, IDisposable
     {
         Aes _aes;
         IAesConfigureation _configureation;
@@ -17,7 +17,6 @@ namespace Safe_file_storage.Models.Services
 
         public AesCryptoService(IAesConfigureation configureation)
         {
-
             _aes = Aes.Create();
             byte[] hasgedPassword = Rfc2898DeriveBytes.Pbkdf2(
                 Encoding.UTF8.GetBytes(configureation.Password),

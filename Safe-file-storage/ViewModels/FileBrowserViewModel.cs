@@ -144,10 +144,13 @@ namespace Safe_file_storage.ViewModels
 
                     };
 
-                    _fileBrowser = new FileBrowserModel(
-                         new LntfsSecureFileSystemService(
-                             lntfsConfiguration,
-                            new AesCryptoService(aesCryptoConfiguration)));
+                    _fileBrowser = FileBrowserFactory.CreateInstanceFromFile(
+                        lntfsConfiguration.FilePath,
+                        lntfsConfiguration.FileSize,
+                        lntfsConfiguration,
+                        aesCryptoConfiguration
+                        );
+                       
                     _selectedFile = null;
 
 
@@ -201,10 +204,12 @@ namespace Safe_file_storage.ViewModels
                         Password = fileSelectionViewModel.Password
                     };
 
-                    _fileBrowser = new FileBrowserModel(
-                         new LntfsSecureFileSystemService(
-                             lntfsConfiguration,
-                            new AesCryptoService(aesCryptoConfiguration)));
+                    _fileBrowser = FileBrowserFactory.CreateInstanceFromFile(
+                        lntfsConfiguration.FilePath,
+                        lntfsConfiguration.FileSize,
+                        lntfsConfiguration,
+                        aesCryptoConfiguration
+                        );
                     _selectedFile = null;
 
                     // Обновить все байдинги

@@ -38,10 +38,17 @@ namespace Safe_file_storage.Models
         {
             await Task.Run(() => _fileWorker.ExportFile(mftNo, Path.Combine(targetPath, _fileWorker.ReadFileAttribute<FileNameAttribute>(mftNo).Name)));
         }
-        public async Task ImportToCurrentDirectoryAsync(string filePath)
+        public async Task<bool> ImportToCurrentDirectoryAsync(string filePath)
         {
-            await Task.Run(() => _fileWorker.ImportFile(filePath, CurrentDirectory.MFTRecordNo));
+            Task<FileModel> task = Task.Run(() => _fileWorker.ImportFile(filePath, CurrentDirectory.MFTRecordNo));
+            await task;
+            if (task.Result is null)
+            {
+                return false;
+            }
+
             UpdateFileList();
+            return true;
         }
         public void MoveToDirectory(int mftRecordNo)
         {

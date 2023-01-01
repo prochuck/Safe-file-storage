@@ -146,12 +146,43 @@ namespace Safe_file_storage.Models.Services
 
         public FileModel ImportFile(string targetFilePath, int directoryToWriteMFTNo)
         {
-            FileModel file = ReadFileHeader(directoryToWriteMFTNo);
+            long totalSize = 0;
+            int totalCount = 0;
+            CalcSizeAndCountOfSubFiles(targetFilePath, ref totalSize, ref totalCount);
+
+            if (totalCount> _mftBitMap.SpaceLeft)
+            {
+                return null;
+            }
+            if (1+(totalSize / _configuration.ClusterSize) > _bitMapBitMap.SpaceLeft)
+            {
+                return null;
+            }
+
+            FileModel parentDir = ReadFileHeader(directoryToWriteMFTNo);
+
+
             FileModel res = ImportSubFiles(targetFilePath, directoryToWriteMFTNo);
-            file.DirectoryAttribute = ReadFileAttribute<DirectoryAttribute>(directoryToWriteMFTNo);
-            file.DirectoryAttribute.Files.Add(res);
-            WriteAttribute(file, file.DirectoryAttribute);
+            parentDir.DirectoryAttribute = ReadFileAttribute<DirectoryAttribute>(directoryToWriteMFTNo);
+            parentDir.DirectoryAttribute.Files.Add(res);
+            WriteAttribute(parentDir, parentDir.DirectoryAttribute);
             return res;
+        }
+
+        public void CalcSizeAndCountOfSubFiles(string targetFilePath,ref long totalSize,ref int totalCount)
+        {
+            totalCount++;
+            if (File.Exists(targetFilePath))
+            {
+                totalSize += new FileInfo(targetFilePath).Length;
+            }
+            else if(Directory.Exists(targetFilePath))
+            {
+                foreach (var item in Directory.GetFiles(targetFilePath))
+                {
+                    CalcSizeAndCountOfSubFiles(item,ref totalSize,ref totalCount);
+                }
+            }
         }
 
         public FileModel ImportSubFiles(string targetFilePath, int directoryToWriteMFTNo)

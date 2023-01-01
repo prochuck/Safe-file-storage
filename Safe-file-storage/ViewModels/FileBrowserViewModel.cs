@@ -243,8 +243,15 @@ namespace Safe_file_storage.ViewModels
             openFileDialog.IsFolderPicker = true;
             if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                WaitView waitView = new WaitView(_fileBrowser.ImportToCurrentDirectoryAsync(openFileDialog.FileName));
+                Task<bool> task = _fileBrowser.ImportToCurrentDirectoryAsync(openFileDialog.FileName);
+                WaitView waitView = new WaitView(task);
+                
                 waitView.ShowDialog();
+
+                if (!task.Result)
+                {
+                    MessageBox.Show("Ощибка импорта");
+                }
 
             }
         }
